@@ -13,9 +13,12 @@ const Home = () => {
         </div>
         
         <nav className="flex items-center gap-6">
-          <button className="text-white font-semibold text-lg hover:opacity-80 transition">
+          <Link 
+            to="/about"
+            className="text-white font-semibold text-lg hover:opacity-80 transition"
+          >
             Sobre nosotros
-          </button>
+         </Link>
           <Link 
             to="/login"
             className="bg-white text-[#00bfff] px-8 py-2.5 rounded-lg font-bold text-lg hover:shadow-lg transition"
