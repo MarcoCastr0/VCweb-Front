@@ -25,9 +25,14 @@ div.bg-white.p-12 {
 /* 🎨 Estilo global para TODOS los botones con .btn-primary */
 .btn {
   @apply bg-[#04A3EA] text-white font-semibold 
-         py-3.5 px-6 text-[16px]
+         py-3 px-6 text-[16px]
          rounded-xl transition-all hover:bg-[#0087C5] shadow-md
          w-full max-w-[300px] mx-auto block;
 }
 
-
+.btn_primary {
+  @apply bg-[#EF4444] text-white font-semibold 
+         py-3 px-6 text-[16px]
+         rounded-xl transition-all hover:bg-[#C53030] shadow-md
+         w-full max-w-[300px] mx-auto block;
+}
