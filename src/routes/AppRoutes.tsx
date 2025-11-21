@@ -5,6 +5,7 @@ import Register from '../pages/Register';
 import About from '../pages/About';
 import ForgotPassword from '../pages/ForgotPassword';
 import StartMeeting from '../pages/StartMeeting';
+import Profile from '../pages/profile';
 
 const AppRoutes = () => {
   return (
@@ -16,6 +17,7 @@ const AppRoutes = () => {
         <Route path="/about" element={<About />} />
         <Route path='/forgot-password' element={<ForgotPassword />}/>
         <Route path='/start-meeting' element={<StartMeeting />}/>
+        <Route path='/profile' element={<Profile />}/>
       </Routes>
     </BrowserRouter>
   );
