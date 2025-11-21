@@ -8,6 +8,7 @@ import StartMeeting from '../pages/StartMeeting';
 import Profile from '../pages/profile';
 import Sitemap from '../pages/Sitemap';
 import EditProfile from '../pages/EditProfile';
+import VideoCall from '../pages/video_call';
 
 const AppRoutes = () => {
   return (
@@ -22,6 +23,7 @@ const AppRoutes = () => {
         <Route path='/profile' element={<Profile />}/>
         <Route path='/sitemap' element={<Sitemap />}/>
         <Route path='/edit-profile' element={<EditProfile />}/>
+        <Route path='/video-call' element={<VideoCall />}/>
 
       </Routes>
     </BrowserRouter>

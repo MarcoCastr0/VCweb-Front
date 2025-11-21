@@ -1,7 +1,14 @@
+import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 
 const StartMeeting = () => {
+  const navigate = useNavigate();
+
+  const handleNewMeeting = () => {
+    navigate("/video-call");
+  };
+
   return (
     <div className="min-h-screen bg-white flex flex-col">
       {/* HEADER */}
@@ -25,7 +32,7 @@ const StartMeeting = () => {
           </p>
         </section>
 
-        {/* RIGHT CARD - JOIN / CREATE MEETING */}
+        {/* RIGHT CARD */}
         <section className="w-full max-w-md bg-white rounded-xl shadow-md border border-gray-200 p-6">
           {/* Title */}
           <h3 className="text-gray-800 font-semibold text-lg mb-4">
@@ -50,8 +57,13 @@ const StartMeeting = () => {
           </div>
 
           {/* Create meeting button */}
-          <button type="submit" className="btn">✚ Nueva Reunión</button>
-          
+          <button 
+            type="button" 
+            className="btn"
+            onClick={handleNewMeeting}
+          >
+            ✚ Nueva Reunión
+          </button>
 
           <p className="text-center text-gray-500 text-sm mt-4">
             Crea o únete a una reunión en segundos

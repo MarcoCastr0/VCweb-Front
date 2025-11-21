@@ -1,7 +1,14 @@
+import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 
 export default function Profile() {
+  const navigate = useNavigate();
+
+  const handleEdit = () => {
+    navigate("/edit-profile");
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header title="Perfil de usuario" showMenu={true} />
@@ -9,6 +16,7 @@ export default function Profile() {
       <main className="flex-1 flex items-center justify-center px-6 py-16">
         <div className="w-full max-w-sm">
           <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-200">
+            
             {/* Info */}
             <div className="space-y-4 text-gray-700">
               <div className="flex justify-between">
@@ -40,13 +48,16 @@ export default function Profile() {
             <hr className="my-6" />
 
             {/* Buttons */}
-            {/* Buttons */}
             <div className="flex flex-col gap-4">
-              <button type="submit" className="btn">
+              <button 
+                type="button" 
+                className="btn"
+                onClick={handleEdit}
+              >
                 ✏️ Editar Información
               </button>
 
-              <button type="submit" className="btn_primary">
+              <button type="button" className="btn_primary">
                 🗑️ Eliminar cuenta
               </button>
             </div>
