@@ -1,1 +1,32 @@
-@import 'tailwindcss'
+@import 'tailwindcss';
+
+/* 🎨 Estilos globales para TODOS los inputs, selects y textareas */
+input,
+textarea,
+select {
+  /* Azul MUY claro */
+  @apply border-2 border-[#B3E5FC] rounded-md px-3 py-2 outline-none;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  /* Azul oscuro */
+  @apply border-[#4FC3F7] ring-2 ring-[#4FC3F7]/60;
+}
+/* Tarjetas principales: solo div con bg-white + padding grande */
+div.bg-white.p-6,
+div.bg-white.p-8,
+div.bg-white.p-10,
+div.bg-white.p-12 {
+  @apply border-2 border-[#B3E5FC] rounded-2xl;
+}
+
+/* Focus dentro de las tarjetas */
+div.bg-white.p-6:focus-within,
+div.bg-white.p-8:focus-within,
+div.bg-white.p-10:focus-within,
+div.bg-white.p-12:focus-within {
+  @apply border-[#4FC3F7];
+}
+
