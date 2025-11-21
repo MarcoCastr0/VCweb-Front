@@ -22,7 +22,7 @@ const Login = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <Header title="Conéctate con tu equipo hoy" showMenu={true} />
+      <Header title="Conéctate con tu equipo hoy" showMenu={false} />
 
       {/* Login Form */}
       <main className="flex-1 flex items-center justify-center px-6 py-16">
