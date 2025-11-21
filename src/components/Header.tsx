@@ -9,17 +9,17 @@ const Header = ({ title, showMenu = false }: HeaderProps) => {
   return (
     <header className="bg-gradient-to-r from-[#00bfff] to-[#0096d6] px-6 py-4 flex items-center justify-between">
       <Link to="/" className="flex items-center gap-3">
-        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg">
+        <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-lg">
           <img 
             src="/Logo.jpg" 
             alt="VCweb Logo" 
-            className="w-10 h-10"
+            className="w-14 h-14"
             onError={(e) => {
               e.currentTarget.style.display = 'none';
             }}
           />
         </div>
-        <span className="text-white font-bold text-xl">VCweb</span>
+        
       </Link>
       
       <h1 className="text-white text-2xl font-semibold">

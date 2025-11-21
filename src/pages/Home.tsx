@@ -7,8 +7,8 @@ const Home = () => {
       {/* Header */}
       <header className="flex justify-between items-center px-8 py-6">
         <div className="flex items-center gap-3">
-          <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg">
-            <img src="/Logo.jpg" alt="VCweb Logo" className="w-10 h-10" />
+          <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-lg">
+            <img src="/Logo.jpg" alt="VCweb Logo" className="w-14 h-14" />
           </div>
           
         </div>
