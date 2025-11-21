@@ -7,6 +7,7 @@ import ForgotPassword from '../pages/ForgotPassword';
 import StartMeeting from '../pages/StartMeeting';
 import Profile from '../pages/profile';
 import Sitemap from '../pages/Sitemap';
+import EditProfile from '../pages/EditProfile';
 
 const AppRoutes = () => {
   return (
@@ -20,6 +21,7 @@ const AppRoutes = () => {
         <Route path='/start-meeting' element={<StartMeeting />}/>
         <Route path='/profile' element={<Profile />}/>
         <Route path='/sitemap' element={<Sitemap />}/>
+        <Route path='/edit-profile' element={<EditProfile />}/>
 
       </Routes>
     </BrowserRouter>
