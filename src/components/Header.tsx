@@ -61,7 +61,7 @@ const Header = ({ title, showMenu = false }: HeaderProps) => {
       {/* Sidebar derecho */}
       <div
         ref={menuRef}
-        className={`fixed top-0 right-0 h-full w-64 bg-white shadow-xl transform transition-transform duration-300 z-50
+        className={`fixed top-0 right-0 h-full w-64 bg-[#edf5fc] shadow-xl transform transition-transform duration-300 z-50
           ${openMenu ? "translate-x-0" : "translate-x-full"}`}
       >
         {/* Encabezado */}
