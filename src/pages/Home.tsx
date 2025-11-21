@@ -10,7 +10,6 @@ const Home = () => {
           <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-lg">
             <img src="/Logo.jpg" alt="VCweb Logo" className="w-14 h-14" />
           </div>
-          
         </div>
 
         <nav className="flex items-center gap-6">
@@ -31,7 +30,7 @@ const Home = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col items-center justify-center text-center px-8 space-y-6">
+      <main className="flex-1 flex flex-col items-center justify-center text-center px-8 space-y-6 relative">
 
         {/* Título */}
         <h1 className="text-white text-5xl font-bold">
@@ -43,12 +42,20 @@ const Home = () => {
           Conecta , crea y gestiona tus<br />proyectos digitales.
         </p>
 
-        {/* Imagen centrada debajo */}
+        {/* Ruedas flotando arriba */}
+        <img
+          src="/rueda.png"
+          alt="Rueda pequeña"
+          className="w-50 h-50 opacity-90 absolute left-[30%] top-[28%]"
+        />
+
+        {/* Imagen principal más centrada */}
         <img
           src="/login.png"
           alt="Imagen Home"
-          className="w-96 h-auto mt-4 drop-shadow-xl"
+          className="w-[420px] h-auto drop-shadow-xl mt-4 relative left-[50px]"
         />
+
       </main>
 
       {/* Footer */}
