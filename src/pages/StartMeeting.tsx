@@ -50,14 +50,8 @@ const StartMeeting = () => {
           </div>
 
           {/* Create meeting button */}
-          <button
-            className="w-full bg-[#04A3EA] text-white font-semibold py-3 rounded-lg
-                       flex items-center justify-center gap-2 text-lg
-                       transition-all hover:bg-[#0087C5] shadow-sm"
-          >
-            <span className="text-2xl">+</span>
-            Nueva Reunion
-          </button>
+          <button type="submit" className="btn">✚ Nueva Reunión</button>
+          
 
           <p className="text-center text-gray-500 text-sm mt-4">
             Crea o únete a una reunión en segundos
