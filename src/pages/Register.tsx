@@ -38,8 +38,8 @@ const Register = () => {
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Email and Age in same row */}
-              <div className="grid grid-cols-2 gap-4">
+              {/* Row 1: Email and Age */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Email Input */}
                 <div>
                   <label
@@ -78,8 +78,8 @@ const Register = () => {
                 </div>
               </div>
 
-              {/* Name and LastName in same row */}
-              <div className="grid grid-cols-2 gap-4">
+              {/* Row 2: Name and LastName */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Name */}
                 <div>
                   <label
@@ -117,8 +117,8 @@ const Register = () => {
                 </div>
               </div>
 
-              {/* Password and Confirm Password in same row */}
-              <div className="grid grid-cols-2 gap-4">
+              {/* Row 3: Password and Confirm Password */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Password Input */}
                 <div>
                   <label
@@ -245,8 +245,12 @@ const Register = () => {
               </div>
 
               {/* Submit Button */}
-              <button type="submit" className="btn">Registrarse</button>
-
+              <button
+                type="submit"
+                className="w-full bg-[#00bfff] text-white py-3 rounded-lg font-bold text-lg hover:bg-[#0096d6] transition shadow-md"
+              >
+                Registrarse
+              </button>
             </form>
 
             {/* Login Link */}
