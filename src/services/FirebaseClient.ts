@@ -16,12 +16,12 @@ import {
 
 // Configuración de Firebase para el frontend
 const firebaseConfig = {
-  apiKey: "AIzaSyAMObFDGxnUNxjPUtas0_q-y-rgwuvIDhc",
-  authDomain: "cvweb-8d1aa.firebaseapp.com",
-  projectId: "cvweb-8d1aa",
-  storageBucket: "cvweb-8d1aa.firebasestorage.app",
-  messagingSenderId: "183537387646",
-  appId: "1:183537387646:web:4f79b37703ae925b17302f"
+  apiKey: (import.meta as any).env.VITE_FIREBASE_API_KEY,
+  authDomain: (import.meta as any).env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: (import.meta as any).env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: (import.meta as any).env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: (import.meta as any).env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: (import.meta as any).env.VITE_FIREBASE_APP_ID
 };
 
 // Initialize Firebase
