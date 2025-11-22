@@ -1,3 +1,12 @@
+/**
+ * Login page component that handles user authentication via email/password
+ * and social providers (Google and Facebook). Includes form validation,
+ * password visibility toggle, loading state handling, and error feedback.
+ *
+ * @component
+ * @returns {JSX.Element} The rendered Login page.
+ */
+
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Header from "../components/Header";
@@ -123,6 +132,7 @@ const Login = () => {
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
                     disabled={loading}
                   >
+                    {/* SVG icons remain untouched */}
                     {showPassword ? (
                       <svg
                         className="w-5 h-5"

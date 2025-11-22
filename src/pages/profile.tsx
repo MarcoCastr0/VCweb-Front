@@ -1,3 +1,17 @@
+/**
+ * Profile page component that loads the authenticated user's data,
+ * displays personal information, and provides actions to edit or delete the account.
+ *
+ * This component:
+ * - Fetches fresh user data from the database on mount.
+ * - Falls back to local storage data if the database request fails.
+ * - Splits Hispanic full names into first and last name segments.
+ * - Redirects to login if there is no active session.
+ *
+ * @component
+ * @returns {JSX.Element} The rendered Profile page.
+ */
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
@@ -16,6 +30,11 @@ export default function Profile() {
     loadUserFromDatabase();
   }, []);
 
+  /**
+   * Loads the authenticated user's data from the database.
+   * Falls back to local storage data if fetching fails.
+   * Redirects to login if no user is authenticated.
+   */
   const loadUserFromDatabase = async () => {
     const currentUser = AuthService.getCurrentUser();
     if (!currentUser) {
@@ -24,24 +43,26 @@ export default function Profile() {
     }
 
     try {
-      // SIEMPRE CONSULTAR A LA BASE DE DATOS
       const userFromDB = await UserService.getUserById(currentUser.id);
       console.log("📊 Usuario desde BD:", userFromDB);
-      setUser(userFromDB);
 
-      // Actualizar localStorage con datos frescos
-      AuthService.saveUserToStorage(userFromDB);
+      setUser(userFromDB);
+      AuthService.saveUserToStorage(userFromDB); // update localStorage with fresh data
     } catch (error: any) {
       console.error("Error cargando usuario:", error);
       setError("Error al cargar los datos del usuario");
-      // Fallback a datos de localStorage
-      setUser(currentUser);
+      setUser(currentUser); // fallback
     } finally {
       setLoading(false);
     }
   };
 
-  // Función MEJORADA para separar nombres y apellidos hispanos
+  /**
+   * Splits Hispanic-style full names into first and last name parts.
+   *
+   * @param {string} fullName - The user's complete name.
+   * @returns {{ firstName: string, lastName: string }} Structured name data.
+   */
   const separateHispanicName = (fullName: string) => {
     if (!fullName) return { firstName: "", lastName: "" };
 
@@ -52,21 +73,16 @@ export default function Profile() {
     }
 
     if (nameParts.length === 2) {
-      // "Marco Castro" -> Nombre: "Marco", Apellido: "Castro"
       return { firstName: nameParts[0], lastName: nameParts[1] };
     }
 
-    // Para 3 o más partes
     if (nameParts.length === 3) {
-      // "Juan Carlos Pérez" -> Nombres: "Juan Carlos", Apellidos: "Pérez"
       return {
         firstName: `${nameParts[0]} ${nameParts[1]}`,
         lastName: nameParts[2],
       };
     }
 
-    // Para 4 o más partes: "Marco Fidel Castro Velasco"
-    // -> Nombres: "Marco Fidel", Apellidos: "Castro Velasco"
     if (nameParts.length >= 4) {
       const half = Math.floor(nameParts.length / 2);
       return {
@@ -75,17 +91,23 @@ export default function Profile() {
       };
     }
 
-    // Fallback
     const firstName = nameParts[0];
     const lastName = nameParts.slice(1).join(" ");
 
     return { firstName, lastName };
   };
 
+  /**
+   * Redirects the user to the edit profile page.
+   */
   const handleEdit = () => {
     navigate("/edit-profile");
   };
 
+  /**
+   * Deletes the user's account after confirmation.
+   * Logs them out and redirects to login.
+   */
   const handleDeleteAccount = async () => {
     if (
       !user ||
@@ -140,7 +162,6 @@ export default function Profile() {
       <main className="flex-1 flex items-center justify-center px-6 py-16">
         <div className="w-full max-w-sm">
           <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-200">
-            {/* Info */}
             <div className="space-y-4 text-gray-700">
               <div className="flex justify-between">
                 <span className="font-semibold">Nombres:</span>
@@ -172,7 +193,6 @@ export default function Profile() {
 
             <hr className="my-6" />
 
-            {/* Buttons */}
             <div className="flex flex-col gap-4">
               <button type="button" className="btn" onClick={handleEdit}>
                 ✏️ Editar Información

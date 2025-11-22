@@ -1,3 +1,13 @@
+/**
+ * Header component that displays a logo, title, and an optional sidebar menu.
+ *
+ * @component
+ * @param {Object} props - Component properties.
+ * @param {string} props.title - Title displayed in the header.
+ * @param {boolean} [props.showMenu=false] - Whether to show the menu button.
+ * @returns {JSX.Element} Rendered Header component with optional sidebar.
+ */
+
 import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 
@@ -11,7 +21,6 @@ const Header = ({ title, showMenu = false }: HeaderProps) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
-  // Cerrar menú al tocar afuera
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -29,21 +38,19 @@ const Header = ({ title, showMenu = false }: HeaderProps) => {
 
   return (
     <>
-      {/* Header */}
       <header
         className="
           bg-gradient-to-r from-[#00bfff] to-[#0096d6]
-          px-4 py-3             /* Móvil pequeño */
-          sm:px-6 sm:py-4       /* Desde tablet hacia arriba */
+          px-4 py-3
+          sm:px-6 sm:py-4
           flex items-center justify-between
         "
       >
-        {/* Logo */}
         <Link to="/" className="flex items-center gap-3">
           <div
             className="
-              w-14 h-14            /* Móvil */
-              sm:w-20 sm:h-20       /* Pantallas grandes */
+              w-14 h-14
+              sm:w-20 sm:h-20
               bg-white rounded-full flex items-center justify-center shadow-lg
             "
           >
@@ -58,12 +65,10 @@ const Header = ({ title, showMenu = false }: HeaderProps) => {
           </div>
         </Link>
 
-        {/* Título */}
         <h1 className="text-white text-lg sm:text-2xl font-semibold">
           {title}
         </h1>
 
-        {/* Botón menú */}
         {showMenu ? (
           <button
             ref={buttonRef}
@@ -71,7 +76,7 @@ const Header = ({ title, showMenu = false }: HeaderProps) => {
             className="text-white"
           >
             <svg
-              className="w-6 h-6 sm:w-8 sm:h-8" /* Más pequeño en móvil */
+              className="w-6 h-6 sm:w-8 sm:h-8"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -89,7 +94,6 @@ const Header = ({ title, showMenu = false }: HeaderProps) => {
         )}
       </header>
 
-      {/* Sidebar derecho */}
       <div
         ref={menuRef}
         className={`
@@ -98,7 +102,6 @@ const Header = ({ title, showMenu = false }: HeaderProps) => {
           ${openMenu ? "translate-x-0" : "translate-x-full"}
         `}
       >
-        {/* Encabezado */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200">
           <h2 className="text-gray-800 font-semibold text-lg">Menú</h2>
           <button
@@ -109,7 +112,6 @@ const Header = ({ title, showMenu = false }: HeaderProps) => {
           </button>
         </div>
 
-        {/* Opciones */}
         <nav className="flex flex-col gap-6 mt-6 px-6 text-gray-800">
           <Link
             to="/profile"

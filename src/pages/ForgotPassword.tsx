@@ -1,17 +1,20 @@
+/**
+ * ForgotPassword page component that displays a password recovery form,
+ * instructions, and security tips for users who need to reset their password.
+ *
+ * @component
+ * @returns {JSX.Element} The rendered Forgot Password page.
+ */
+
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 
 export default function ForgotPassword() {
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      {" "}
-      {/* Fondo azul del modelo */}
       <Header title="¿Olvidaste tu contraseña?" />
       <main className="flex-grow flex items-center justify-center px-4 py-8">
         <div className="max-w-md w-full rounded-2xl p-8">
-          {" "}
-          {/* Caja blanca centrada */}
-          {/* Título */}
           <div className="text-center mb-6">
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
               Restablece tu contraseña
@@ -21,7 +24,7 @@ export default function ForgotPassword() {
               restablecer tu contraseña.
             </p>
           </div>
-          {/* Input */}
+
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Correo electrónico
@@ -32,8 +35,9 @@ export default function ForgotPassword() {
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00A8FF]"
             />
           </div>
-          {/* Botón */}
+
           <button className="btn">Enviar correo</button>
+
           <div className="text-center mt-6">
             <p className="text-gray-600 text-sm">
               ¿Recordaste tu contraseña?{" "}
@@ -42,7 +46,7 @@ export default function ForgotPassword() {
               </a>
             </p>
           </div>
-          {/* Tips de seguridad */}
+
           <div className="mt-4 border border-gray-400 bg-[#e6f3ff] rounded-xl p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
               <span>💡</span> Consejos de seguridad:
