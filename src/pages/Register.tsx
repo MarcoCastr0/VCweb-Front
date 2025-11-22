@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import { AuthService } from "../services/AuthService";
 
 const Register = () => {
   const [email, setEmail] = useState("");
@@ -12,15 +13,54 @@ const Register = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password !== confirmPassword) {
-      alert("Las contraseñas no coinciden");
-      return;
+  const navigate = useNavigate();
+
+  // En Register.tsx - agregar logs para debug
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  
+  if (password !== confirmPassword) {
+    setError("Las contraseñas no coinciden");
+    return;
+  }
+
+  if (password.length < 6) {
+    setError("La contraseña debe tener al menos 6 caracteres");
+    return;
+  }
+
+  setLoading(true);
+  setError("");
+
+  try {
+    console.log("📝 Datos del formulario:", { email, name, lastName, age });
+    
+    const result = await AuthService.registerWithEmail({
+      email,
+      password,
+      name,
+      lastName, 
+      age
+    });
+    
+    console.log("✅ Resultado del registro:", result);
+    
+    if (result.success) {
+      AuthService.saveUserToStorage(result.user);
+      navigate("/start-meeting");
+    } else {
+      setError(result.message || "Error al registrar usuario");
     }
-    console.log("Register:", { email, age, name, lastName, password });
-  };
+  } catch (error: any) {
+    console.error("❌ Error en registro:", error);
+    setError(error.message || "Error al registrar usuario");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -36,6 +76,13 @@ const Register = () => {
             <p className="text-gray-600 text-center mb-8">
               Completa el formulario para empezar
             </p>
+
+            {/* Error Message */}
+            {error && (
+              <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-center">
+                {error}
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-5">
               {/* Row 1: Email and Age */}
@@ -56,6 +103,7 @@ const Register = () => {
                     placeholder="ejemplo@correo.com"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00bfff] focus:border-transparent"
                     required
+                    disabled={loading}
                   />
                 </div>
 
@@ -74,6 +122,7 @@ const Register = () => {
                     onChange={(e) => setAge(e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00bfff] focus:border-transparent"
                     required
+                    disabled={loading}
                   />
                 </div>
               </div>
@@ -95,6 +144,7 @@ const Register = () => {
                     onChange={(e) => setName(e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00bfff] focus:border-transparent"
                     required
+                    disabled={loading}
                   />
                 </div>
 
@@ -113,6 +163,7 @@ const Register = () => {
                     onChange={(e) => setLastName(e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00bfff] focus:border-transparent"
                     required
+                    disabled={loading}
                   />
                 </div>
               </div>
@@ -135,11 +186,13 @@ const Register = () => {
                       onChange={(e) => setPassword(e.target.value)}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00bfff] focus:border-transparent pr-12"
                       required
+                      disabled={loading}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      disabled={loading}
                     >
                       {showPassword ? (
                         <svg
@@ -196,6 +249,7 @@ const Register = () => {
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00bfff] focus:border-transparent pr-12"
                       required
+                      disabled={loading}
                     />
                     <button
                       type="button"
@@ -203,6 +257,7 @@ const Register = () => {
                         setShowConfirmPassword(!showConfirmPassword)
                       }
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      disabled={loading}
                     >
                       {showConfirmPassword ? (
                         <svg
@@ -245,7 +300,13 @@ const Register = () => {
               </div>
 
               {/* Submit Button */}
-             <button className="btn">Registrarse</button>
+              <button 
+                type="submit" 
+                className="btn w-full"
+                disabled={loading}
+              >
+                {loading ? "Registrando..." : "Registrarse"}
+              </button>
             </form>
 
             {/* Login Link */}

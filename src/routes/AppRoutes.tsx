@@ -8,7 +8,7 @@ import StartMeeting from '../pages/StartMeeting';
 import Profile from '../pages/profile';
 import Sitemap from '../pages/Sitemap';
 import EditProfile from '../pages/EditProfile';
-import VideoCall from '../pages/video_call';
+import VideoCall from '../pages/Video_call';
 
 const AppRoutes = () => {
   return (
