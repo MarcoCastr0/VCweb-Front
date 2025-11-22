@@ -36,7 +36,7 @@ const handleSubmit = async (e: React.FormEvent) => {
   setError("");
 
   try {
-    console.log("📝 Datos del formulario:", { email, name, lastName, age });
+    console.log("📝 Datos del formulario:", { email, name, lastName, age, password });
     
     const result = await AuthService.registerWithEmail({
       email,

@@ -28,7 +28,7 @@ export default function Profile() {
       const userFromDB = await UserService.getUserById(currentUser.id);
       console.log("📊 Usuario desde BD:", userFromDB);
       setUser(userFromDB);
-      
+
       // Actualizar localStorage con datos frescos
       AuthService.saveUserToStorage(userFromDB);
     } catch (error: any) {
@@ -44,41 +44,41 @@ export default function Profile() {
   // Función MEJORADA para separar nombres y apellidos hispanos
   const separateHispanicName = (fullName: string) => {
     if (!fullName) return { firstName: "", lastName: "" };
-    
+
     const nameParts = fullName.trim().split(/\s+/);
-    
+
     if (nameParts.length === 1) {
       return { firstName: nameParts[0], lastName: "" };
     }
-    
+
     if (nameParts.length === 2) {
       // "Marco Castro" -> Nombre: "Marco", Apellido: "Castro"
       return { firstName: nameParts[0], lastName: nameParts[1] };
     }
-    
+
     // Para 3 o más partes
     if (nameParts.length === 3) {
       // "Juan Carlos Pérez" -> Nombres: "Juan Carlos", Apellidos: "Pérez"
-      return { 
-        firstName: `${nameParts[0]} ${nameParts[1]}`, 
-        lastName: nameParts[2] 
+      return {
+        firstName: `${nameParts[0]} ${nameParts[1]}`,
+        lastName: nameParts[2],
       };
     }
-    
+
     // Para 4 o más partes: "Marco Fidel Castro Velasco"
     // -> Nombres: "Marco Fidel", Apellidos: "Castro Velasco"
     if (nameParts.length >= 4) {
       const half = Math.floor(nameParts.length / 2);
       return {
-        firstName: nameParts.slice(0, half).join(' '),
-        lastName: nameParts.slice(half).join(' ')
+        firstName: nameParts.slice(0, half).join(" "),
+        lastName: nameParts.slice(half).join(" "),
       };
     }
-    
+
     // Fallback
     const firstName = nameParts[0];
-    const lastName = nameParts.slice(1).join(' ');
-    
+    const lastName = nameParts.slice(1).join(" ");
+
     return { firstName, lastName };
   };
 
@@ -87,7 +87,12 @@ export default function Profile() {
   };
 
   const handleDeleteAccount = async () => {
-    if (!user || !window.confirm("¿Estás seguro de que quieres eliminar tu cuenta? Esta acción no se puede deshacer.")) {
+    if (
+      !user ||
+      !window.confirm(
+        "¿Estás seguro de que quieres eliminar tu cuenta? Esta acción no se puede deshacer."
+      )
+    ) {
       return;
     }
 
@@ -99,7 +104,6 @@ export default function Profile() {
       alert("Error al eliminar la cuenta");
     }
   };
-
 
   if (loading) {
     return (
@@ -118,7 +122,9 @@ export default function Profile() {
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <Header title="Perfil de usuario" showMenu={true} />
         <main className="flex-1 flex items-center justify-center">
-          <div className="text-center text-red-500">{error || "Usuario no encontrado"}</div>
+          <div className="text-center text-red-500">
+            {error || "Usuario no encontrado"}
+          </div>
         </main>
         <Footer />
       </div>
@@ -134,7 +140,6 @@ export default function Profile() {
       <main className="flex-1 flex items-center justify-center px-6 py-16">
         <div className="w-full max-w-sm">
           <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-200">
-            
             {/* Info */}
             <div className="space-y-4 text-gray-700">
               <div className="flex justify-between">
@@ -152,9 +157,11 @@ export default function Profile() {
                 <span>{user.age || "No especificado"}</span>
               </div>
 
-              <div className="flex justify-between">
-                <span className="font-semibold">Correo:</span>
-                <span>{user.email}</span>
+              <div className="grid grid-cols-3 gap-2">
+                <span className="font-semibold col-span-1">Correo:</span>
+                <span className="col-span-2 break-words text-right">
+                  {user.email}
+                </span>
               </div>
 
               <div className="flex justify-between">
@@ -167,18 +174,12 @@ export default function Profile() {
 
             {/* Buttons */}
             <div className="flex flex-col gap-4">
-              <button 
-                type="button" 
-                className="btn"
-                onClick={handleEdit}
-              >
+              <button type="button" className="btn" onClick={handleEdit}>
                 ✏️ Editar Información
               </button>
 
-              
-
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className="btn_primary"
                 onClick={handleDeleteAccount}
               >

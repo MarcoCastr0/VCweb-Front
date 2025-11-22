@@ -7,17 +7,30 @@ import { AuthService } from "../services/AuthService";
 import { UserService } from "../services/UserService";
 import type { User, UpdateUserData } from "../services/User";
 
+// 🔐 FIREBASE AUTH
+import {
+  getAuth,
+  updatePassword,
+  EmailAuthProvider,
+  reauthenticateWithCredential
+} from "firebase/auth";
+
 export default function EditProfile() {
   const [showPassword, setShowPassword] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+
   const [formData, setFormData] = useState({
     name: "",
     lastName: "",
     age: "",
     email: "",
+    currentPassword: "",
     password: ""
   });
+
   const [message, setMessage] = useState("");
 
   const navigate = useNavigate();
@@ -26,38 +39,20 @@ export default function EditProfile() {
     loadUserData();
   }, []);
 
-  // ✅ FUNCIÓN COMPLETA IGUAL A LA DE PROFILE
   const separateName = (fullName: string) => {
     if (!fullName) return { firstName: "", lastName: "" };
 
     const nameParts = fullName.trim().split(/\s+/);
 
-    if (nameParts.length === 1) {
-      return { firstName: nameParts[0], lastName: "" };
-    }
+    if (nameParts.length === 1) return { firstName: nameParts[0], lastName: "" };
+    if (nameParts.length === 2) return { firstName: nameParts[0], lastName: nameParts[1] };
+    if (nameParts.length === 3)
+      return { firstName: `${nameParts[0]} ${nameParts[1]}`, lastName: nameParts[2] };
 
-    if (nameParts.length === 2) {
-      return { firstName: nameParts[0], lastName: nameParts[1] };
-    }
-
-    if (nameParts.length === 3) {
-      return {
-        firstName: `${nameParts[0]} ${nameParts[1]}`,
-        lastName: nameParts[2]
-      };
-    }
-
-    if (nameParts.length >= 4) {
-      const half = Math.floor(nameParts.length / 2);
-      return {
-        firstName: nameParts.slice(0, half).join(" "),
-        lastName: nameParts.slice(half).join(" ")
-      };
-    }
-
+    const half = Math.floor(nameParts.length / 2);
     return {
-      firstName: nameParts[0],
-      lastName: nameParts.slice(1).join(" ")
+      firstName: nameParts.slice(0, half).join(" "),
+      lastName: nameParts.slice(half).join(" ")
     };
   };
 
@@ -70,36 +65,23 @@ export default function EditProfile() {
 
     try {
       const userFromDB = await UserService.getUserById(currentUser.id);
-      console.log("📊 Usuario cargado para editar:", userFromDB);
       setUser(userFromDB);
 
       const { firstName, lastName } = separateName(userFromDB.name);
 
-      setFormData({
+      setFormData(prev => ({
+        ...prev,
         name: firstName,
-        lastName: lastName,
+        lastName,
         age: userFromDB.age ? String(userFromDB.age) : "",
-        email: userFromDB.email,
-        password: ""
-      });
+        email: userFromDB.email
+      }));
     } catch (error) {
-      console.error("Error cargando datos del usuario:", error);
-
-      const currentUser = AuthService.getCurrentUser();
-      if (currentUser) {
-        setUser(currentUser);
-        const { firstName, lastName } = separateName(currentUser.name);
-        setFormData({
-          name: firstName,
-          lastName: lastName,
-          age: currentUser.age ? String(currentUser.age) : "",
-          email: currentUser.email,
-          password: ""
-        });
-      }
+      console.error("Error cargando usuario:", error);
     }
   };
 
+  // 🔐 ACTUALIZAR PERFIL + CONTRASEÑA REAL
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -109,37 +91,78 @@ export default function EditProfile() {
     setMessage("");
 
     try {
+      const auth = getAuth();
+      const currentUser = auth.currentUser;
+
+      if (!currentUser) throw new Error("Usuario no autenticado");
+
+      // ==================================================
+      // 1️⃣ CAMBIAR CONTRASEÑA SI LLENÓ LOS CAMPOS
+      // ==================================================
+      if (formData.password.trim() !== "") {
+        if (formData.currentPassword.trim() === "") {
+          setMessage("❌ Debes ingresar tu contraseña actual");
+          setLoading(false);
+          return;
+        }
+
+        try {
+          // Credencial con contraseña actual
+          const credential = EmailAuthProvider.credential(
+            user.email,
+            formData.currentPassword
+          );
+
+          await reauthenticateWithCredential(currentUser, credential);
+          console.log("🔐 Usuario reautenticado");
+
+          await updatePassword(currentUser, formData.password);
+          console.log("🔑 Contraseña actualizada");
+
+          setMessage("🔑 Contraseña actualizada correctamente");
+        } catch (err: any) {
+          console.error("❌ Error cambiando contraseña:", err);
+
+          if (err.code === "auth/wrong-password") {
+            setMessage("❌ La contraseña actual es incorrecta");
+          } else {
+            setMessage("❌ Error actualizando contraseña");
+          }
+
+          setLoading(false);
+          return;
+        }
+      }
+
+      // ==================================================
+      // 2️⃣ ACTUALIZAR DATOS EN BACKEND
+      // ==================================================
       const updates: UpdateUserData = {
         name: `${formData.name} ${formData.lastName}`.trim(),
         email: formData.email,
         age: formData.age
       };
 
-      console.log("📤 Actualizando usuario:", updates);
-
       const updatedUser = await UserService.updateUser(user.id, updates);
 
       AuthService.saveUserToStorage(updatedUser);
 
-      setMessage("✅ Perfil actualizado correctamente");
+      setMessage(prev =>
+        prev.includes("🔑")
+          ? prev + "\n✅ Perfil actualizado correctamente"
+          : "✅ Perfil actualizado correctamente"
+      );
 
-      setTimeout(() => {
-        navigate("/profile");
-      }, 2000);
-
-    } catch (error: any) {
-      console.error("❌ Error actualizando perfil:", error);
-      setMessage(`❌ Error: ${error.message || "No se pudo actualizar el perfil"}`);
-    } finally {
-      setLoading(false);
+      setTimeout(() => navigate("/profile"), 2000);
+    } catch (err: any) {
+      setMessage(`❌ Error: ${err.message}`);
     }
+
+    setLoading(false);
   };
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   if (!user) return null;
@@ -153,25 +176,27 @@ export default function EditProfile() {
           <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-200">
 
             {message && (
-              <div className={`mb-4 p-3 rounded-lg text-center ${
-                message.includes('✅')
-                  ? 'bg-green-100 text-green-700 border border-green-400'
-                  : 'bg-red-100 text-red-700 border border-red-400'
-              }`}>
+              <div
+                className={`mb-4 p-3 rounded-lg text-center ${
+                  message.includes("✅") || message.includes("🔑")
+                    ? "bg-green-100 text-green-700 border border-green-400"
+                    : "bg-red-100 text-red-700 border border-red-400"
+                }`}
+              >
                 {message}
               </div>
             )}
 
             <form className="space-y-5 text-gray-700" onSubmit={handleSubmit}>
 
+              {/* ------- CAMPOS NORMALES ------- */}
               <div className="flex flex-col">
                 <label className="font-semibold">Nombres:</label>
                 <input
                   type="text"
                   value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
-                  placeholder="Juan Carlos"
-                  className="mt-1 border rounded-lg px-3 py-2 w-full focus:outline-none"
+                  onChange={(e) => handleInputChange("name", e.target.value)}
+                  className="mt-1 border rounded-lg px-3 py-2 w-full"
                   disabled={loading}
                 />
               </div>
@@ -181,9 +206,8 @@ export default function EditProfile() {
                 <input
                   type="text"
                   value={formData.lastName}
-                  onChange={(e) => handleInputChange('lastName', e.target.value)}
-                  placeholder="Pérez Gómez"
-                  className="mt-1 border rounded-lg px-3 py-2 w-full focus:outline-none"
+                  onChange={(e) => handleInputChange("lastName", e.target.value)}
+                  className="mt-1 border rounded-lg px-3 py-2 w-full"
                   disabled={loading}
                 />
               </div>
@@ -193,9 +217,8 @@ export default function EditProfile() {
                 <input
                   type="number"
                   value={formData.age}
-                  onChange={(e) => handleInputChange('age', e.target.value)}
-                  placeholder="25"
-                  className="mt-1 border rounded-lg px-3 py-2 w-full focus:outline-none"
+                  onChange={(e) => handleInputChange("age", e.target.value)}
+                  className="mt-1 border rounded-lg px-3 py-2 w-full"
                   disabled={loading}
                 />
               </div>
@@ -205,21 +228,41 @@ export default function EditProfile() {
                 <input
                   type="email"
                   value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  placeholder="correo@ejemplo.com"
-                  className="mt-1 border rounded-lg px-3 py-2 w-full focus:outline-none"
+                  onChange={(e) => handleInputChange("email", e.target.value)}
+                  className="mt-1 border rounded-lg px-3 py-2 w-full"
                   disabled={loading}
                 />
               </div>
 
+              {/* ------- CONTRASEÑA ACTUAL ------- */}
               <div className="flex flex-col relative">
-                <label className="font-semibold">Nueva Contraseña (opcional):</label>
+                <label className="font-semibold">Contraseña actual:</label>
+                <input
+                  type={showCurrentPassword ? "text" : "password"}
+                  value={formData.currentPassword}
+                  onChange={(e) => handleInputChange("currentPassword", e.target.value)}
+                  placeholder="Requerida para cambiar la contraseña"
+                  className="mt-1 border rounded-lg px-3 py-2 w-full pr-10"
+                  disabled={loading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                  className="absolute right-3 top-10 text-gray-500"
+                >
+                  {showCurrentPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
+
+              {/* ------- NUEVA CONTRASEÑA ------- */}
+              <div className="flex flex-col relative">
+                <label className="font-semibold">Nueva contraseña (opcional):</label>
                 <input
                   type={showPassword ? "text" : "password"}
                   value={formData.password}
-                  onChange={(e) => handleInputChange('password', e.target.value)}
-                  placeholder="Dejar en blanco para no cambiar"
-                  className="mt-1 border rounded-lg px-3 py-2 w-full focus:outline-none pr-10"
+                  onChange={(e) => handleInputChange("password", e.target.value)}
+                  placeholder="Dejar en blanco si no se cambia"
+                  className="mt-1 border rounded-lg px-3 py-2 w-full pr-10"
                   disabled={loading}
                 />
 
@@ -227,19 +270,12 @@ export default function EditProfile() {
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-10 text-gray-500"
-                  disabled={loading}
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
 
-              <hr className="my-4" />
-
-              <button
-                type="submit"
-                className="btn w-full"
-                disabled={loading}
-              >
+              <button type="submit" className="btn w-full" disabled={loading}>
                 {loading ? "Guardando..." : "💾 Guardar Cambios"}
               </button>
 

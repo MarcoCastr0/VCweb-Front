@@ -8,7 +8,7 @@ export interface User {
   name: string;
   email: string;
   photoURL?: string | null;
-  provider: 'google' | 'facebook' | 'github' | 'manual';
+  provider: 'google' | 'facebook' | 'manual';
   createdAt: string;
   updatedAt: string;
   age?: number;
