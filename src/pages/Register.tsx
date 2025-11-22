@@ -4,69 +4,97 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { AuthService } from "../services/AuthService";
 
+/**
+ * Register component for creating a new user account.
+ * Handles user input, validation, password visibility and submit logic.
+ * @component
+ */
 const Register = () => {
+  /** @state Stores the user's email */
   const [email, setEmail] = useState("");
+
+  /** @state Stores the user's age */
   const [age, setAge] = useState("");
+
+  /** @state Stores the user's first name */
   const [name, setName] = useState("");
+
+  /** @state Stores the user's last name */
   const [lastName, setLastName] = useState("");
+
+  /** @state Stores the user's password */
   const [password, setPassword] = useState("");
+
+  /** @state Stores password confirmation */
   const [confirmPassword, setConfirmPassword] = useState("");
+
+  /** @state Controls visibility of the password field */
   const [showPassword, setShowPassword] = useState(false);
+
+  /** @state Controls visibility of the confirm password field */
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  /** @state Indicates if form submission is in progress */
   const [loading, setLoading] = useState(false);
+
+  /** @state Stores error messages displayed in the UI */
   const [error, setError] = useState("");
 
   const navigate = useNavigate();
 
-  // En Register.tsx - agregar logs para debug
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  
-  if (password !== confirmPassword) {
-    setError("Las contraseñas no coinciden");
-    return;
-  }
-
-  if (password.length < 6) {
-    setError("La contraseña debe tener al menos 6 caracteres");
-    return;
-  }
-
-  setLoading(true);
-  setError("");
-
-  try {
-    console.log("📝 Datos del formulario:", { email, name, lastName, age, password });
+  /**
+   * Handles form submission for user registration.
+   * Validates passwords, sends data to AuthService and redirects the user.
+   * @async
+   * @param {React.FormEvent} e - Form submission event
+   */
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-    const result = await AuthService.registerWithEmail({
-      email,
-      password,
-      name,
-      lastName, 
-      age
-    });
-    
-    console.log("✅ Resultado del registro:", result);
-    
-    if (result.success) {
-      AuthService.saveUserToStorage(result.user);
-      navigate("/start-meeting");
-    } else {
-      setError(result.message || "Error al registrar usuario");
+    if (password !== confirmPassword) {
+      setError("Las contraseñas no coinciden");
+      return;
     }
-  } catch (error: any) {
-    console.error("❌ Error en registro:", error);
-    setError(error.message || "Error al registrar usuario");
-  } finally {
-    setLoading(false);
-  }
-};
+
+    if (password.length < 6) {
+      setError("La contraseña debe tener al menos 6 caracteres");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      console.log("📝 Datos del formulario:", { email, name, lastName, age, password });
+      
+      const result = await AuthService.registerWithEmail({
+        email,
+        password,
+        name,
+        lastName, 
+        age
+      });
+      
+      console.log("✅ Resultado del registro:", result);
+      
+      if (result.success) {
+        AuthService.saveUserToStorage(result.user);
+        navigate("/start-meeting");
+      } else {
+        setError(result.message || "Error al registrar usuario");
+      }
+    } catch (error: any) {
+      console.error("❌ Error en registro:", error);
+      setError(error.message || "Error al registrar usuario");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header title="Comienza tu viaje hoy" showMenu={false} />
 
-      {/* Register Form */}
       <main className="flex-1 flex items-center justify-center px-6 py-16">
         <div className="w-full max-w-2xl">
           <div className="bg-white rounded-2xl shadow-lg p-8">
@@ -77,7 +105,6 @@ const handleSubmit = async (e: React.FormEvent) => {
               Completa el formulario para empezar
             </p>
 
-            {/* Error Message */}
             {error && (
               <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-center">
                 {error}
@@ -85,10 +112,7 @@ const handleSubmit = async (e: React.FormEvent) => {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-5">
-              
-              {/* Row 2: Name and LastName */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Name */}
                 <div>
                   <label
                     htmlFor="name"
@@ -107,7 +131,6 @@ const handleSubmit = async (e: React.FormEvent) => {
                   />
                 </div>
 
-                {/* Last Name */}
                 <div>
                   <label
                     htmlFor="lastName"
@@ -126,9 +149,8 @@ const handleSubmit = async (e: React.FormEvent) => {
                   />
                 </div>
               </div>
-              {/* Row 1: Email and Age */}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Email Input */}
                 <div>
                   <label
                     htmlFor="email"
@@ -148,7 +170,6 @@ const handleSubmit = async (e: React.FormEvent) => {
                   />
                 </div>
 
-                {/* Age Input */}
                 <div>
                   <label
                     htmlFor="age"
@@ -168,9 +189,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                 </div>
               </div>
 
-              {/* Row 3: Password and Confirm Password */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Password Input */}
                 <div>
                   <label
                     htmlFor="password"
@@ -233,7 +252,6 @@ const handleSubmit = async (e: React.FormEvent) => {
                   </div>
                 </div>
 
-                {/* Confirm Password Input */}
                 <div>
                   <label
                     htmlFor="confirmPassword"
@@ -299,7 +317,6 @@ const handleSubmit = async (e: React.FormEvent) => {
                 </div>
               </div>
 
-              {/* Submit Button */}
               <button 
                 type="submit" 
                 className="btn w-full"
@@ -309,7 +326,6 @@ const handleSubmit = async (e: React.FormEvent) => {
               </button>
             </form>
 
-            {/* Login Link */}
             <p className="text-center mt-6 text-gray-700">
               ¿Ya tienes cuenta?{" "}
               <Link

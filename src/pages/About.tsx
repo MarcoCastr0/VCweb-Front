@@ -1,3 +1,11 @@
+/**
+ * About page component that displays information about the VCweb project,
+ * including its academic purpose, description, and team members.
+ *
+ * @component
+ * @returns {JSX.Element} The rendered About page.
+ */
+
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
@@ -6,14 +14,12 @@ const About = () => {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header title="Sobre Nosotros" showMenu={true} />
 
-      {/* Main Content */}
       <main className="flex-1 flex items-center justify-center px-6 py-16">
         <div className="w-full max-w-3xl">
           <h2 className="text-4xl font-bold text-gray-800 text-center mb-12">
             Bienvenido a VCweb
           </h2>
 
-          {/* Info Card */}
           <div className="bg-white rounded-2xl shadow-lg p-10 border border-gray-200">
             <h3 className="text-2xl font-bold text-gray-800 text-center mb-6">
               Proyecto Académico

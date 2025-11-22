@@ -2,12 +2,18 @@ import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
+/**
+ * Sitemap page component.
+ * Displays navigation links to main sections of the application.
+ *
+ * @component
+ * @returns {JSX.Element} The rendered sitemap page.
+ */
 const Sitemap = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header title="Mapa del sitio" showMenu={true} />
 
-      {/* Main Content */}
       <main className="flex-1 flex items-center justify-center px-6 py-16">
         <div className="w-full max-w-lg">
           <div className="bg-white rounded-2xl shadow-lg p-10 border border-gray-200">
@@ -15,9 +21,7 @@ const Sitemap = () => {
               Accede fácilmente a las secciones principales de VCweb:
             </p>
 
-            {/* Navigation Links */}
             <nav className="space-y-4">
-              {/* Inicio */}
               <Link
                 to="/"
                 className="flex items-center gap-4 text-gray-800 hover:text-[#00bfff] transition group"
@@ -40,7 +44,6 @@ const Sitemap = () => {
                 <span className="text-lg font-medium underline">Inicio</span>
               </Link>
 
-              {/* Iniciar Sesión */}
               <Link
                 to="/login"
                 className="flex items-center gap-4 text-gray-800 hover:text-[#00bfff] transition group"
@@ -65,7 +68,6 @@ const Sitemap = () => {
                 </span>
               </Link>
 
-              {/* Registrarse */}
               <Link
                 to="/register"
                 className="flex items-center gap-4 text-gray-800 hover:text-[#00bfff] transition group"
@@ -90,7 +92,6 @@ const Sitemap = () => {
                 </span>
               </Link>
 
-              {/* Restablecer contraseña */}
               <Link
                 to="/forgot-password"
                 className="flex items-center gap-4 text-gray-800 hover:text-[#00bfff] transition group"
@@ -115,7 +116,6 @@ const Sitemap = () => {
                 </span>
               </Link>
 
-              {/* Sobre nosotros */}
               <Link
                 to="/about"
                 className="flex items-center gap-4 text-gray-800 hover:text-[#00bfff] transition group"

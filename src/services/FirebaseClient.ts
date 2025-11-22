@@ -1,6 +1,6 @@
 /**
  * @file FirebaseClient.ts
- * @description Firebase configuration for frontend
+ * @description Initializes Firebase services and exports authentication utilities for the frontend.
  */
 
 import { initializeApp } from 'firebase/app';
@@ -14,7 +14,10 @@ import {
   createUserWithEmailAndPassword
 } from 'firebase/auth';
 
-// Configuración de Firebase para el frontend
+/**
+ * Firebase configuration object loaded from environment variables.
+ * @constant {object}
+ */
 const firebaseConfig = {
   apiKey: (import.meta as any).env.VITE_FIREBASE_API_KEY,
   authDomain: (import.meta as any).env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -24,18 +27,42 @@ const firebaseConfig = {
   appId: (import.meta as any).env.VITE_FIREBASE_APP_ID
 };
 
-// Initialize Firebase
+/**
+ * Initializes the Firebase App instance.
+ * @type {import('firebase/app').FirebaseApp}
+ */
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firebase Authentication
+/**
+ * Firebase Authentication instance.
+ * @type {import('firebase/auth').Auth}
+ */
 export const auth = getAuth(app);
 
-// Auth providers
+/**
+ * Google authentication provider.
+ * @type {import('firebase/auth').GoogleAuthProvider}
+ */
 export const googleProvider = new GoogleAuthProvider();
+
+/**
+ * Facebook authentication provider.
+ * @type {import('firebase/auth').FacebookAuthProvider}
+ */
 export const facebookProvider = new FacebookAuthProvider();
+
+/**
+ * GitHub authentication provider.
+ * @type {import('firebase/auth').GithubAuthProvider}
+ */
 export const githubProvider = new GithubAuthProvider();
 
-// Auth methods
+/**
+ * Authentication helper methods exported from Firebase.
+ * @typedef {function} signInWithPopup
+ * @typedef {function} signInWithEmailAndPassword
+ * @typedef {function} createUserWithEmailAndPassword
+ */
 export { 
   signInWithPopup, 
   signInWithEmailAndPassword, 

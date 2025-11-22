@@ -2,24 +2,37 @@ import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 
+/**
+ * StartMeeting page component.
+ * 
+ * Provides UI for starting a new meeting or joining an existing one 
+ * by entering a meeting code. It includes navigation, input handling, 
+ * and layout for the meeting start section.
+ * 
+ * @component
+ * @returns {JSX.Element} The rendered StartMeeting page.
+ */
 const StartMeeting = () => {
   const navigate = useNavigate();
 
+  /**
+   * Navigates the user to the video call page to start a new meeting.
+   * 
+   * @function
+   * @returns {void}
+   */
   const handleNewMeeting = () => {
     navigate("/video-call");
   };
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      {/* HEADER */}
       <Header title="Inicia una reunion" showMenu={true} />
 
-      {/* MAIN CONTENT */}
       <main
         className="flex-1 w-full px-6 lg:px-16 py-6 flex flex-col lg:flex-row 
                  items-center justify-center gap-16"
       >
-        {/* LEFT TEXT CONTENT */}
         <section className="max-w-xl">
           <h1 className="text-4xl font-bold text-gray-900 leading-snug mb-4">
             Video conferencias seguras <br /> para tus proyectos digitales.
@@ -32,14 +45,11 @@ const StartMeeting = () => {
           </p>
         </section>
 
-        {/* RIGHT CARD */}
         <section className="w-full max-w-md bg-white rounded-xl shadow-md border border-gray-200 p-6">
-          {/* Title */}
           <h3 className="text-gray-800 font-semibold text-lg mb-4">
             Comienza Ahora
           </h3>
 
-          {/* Input + Join button */}
           <div className="flex gap-3 mb-5">
             <input
               type="text"
@@ -56,7 +66,6 @@ const StartMeeting = () => {
             </button>
           </div>
 
-          {/* Create meeting button */}
           <button 
             type="button" 
             className="btn"
@@ -71,7 +80,6 @@ const StartMeeting = () => {
         </section>
       </main>
 
-      {/* FOOTER */}
       <Footer />
     </div>
   );

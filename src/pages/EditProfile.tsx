@@ -1,3 +1,15 @@
+/**
+ * EditProfile page component that allows users to update their personal data
+ * and optionally change their Firebase authentication password.
+ *
+ * This component loads user data from the backend on mount, displays a form,
+ * and updates both Firebase authentication (if password fields are filled)
+ * and backend user data.
+ *
+ * @component
+ * @returns {JSX.Element|null} The rendered Edit Profile page or null while loading.
+ */
+
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { useState, useEffect } from "react";
@@ -7,7 +19,6 @@ import { AuthService } from "../services/AuthService";
 import { UserService } from "../services/UserService";
 import type { User, UpdateUserData } from "../services/User";
 
-// 🔐 FIREBASE AUTH
 import {
   getAuth,
   updatePassword,
@@ -39,6 +50,12 @@ export default function EditProfile() {
     loadUserData();
   }, []);
 
+  /**
+   * Splits a full name into first name and last name.
+   *
+   * @param {string} fullName - The complete name string.
+   * @returns {{ firstName: string, lastName: string }} Parsed name data.
+   */
   const separateName = (fullName: string) => {
     if (!fullName) return { firstName: "", lastName: "" };
 
@@ -56,6 +73,11 @@ export default function EditProfile() {
     };
   };
 
+  /**
+   * Loads current user data from AuthService and backend.
+   *
+   * Redirects to login if no user is authenticated.
+   */
   const loadUserData = async () => {
     const currentUser = AuthService.getCurrentUser();
     if (!currentUser) {
@@ -81,7 +103,13 @@ export default function EditProfile() {
     }
   };
 
-  // 🔐 ACTUALIZAR PERFIL + CONTRASEÑA REAL
+  /**
+   * Handles form submission:
+   * - Reauthenticates and updates Firebase password (if provided).
+   * - Updates backend user profile.
+   *
+   * @param {React.FormEvent} e - Form submit event.
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -96,9 +124,6 @@ export default function EditProfile() {
 
       if (!currentUser) throw new Error("Usuario no autenticado");
 
-      // ==================================================
-      // 1️⃣ CAMBIAR CONTRASEÑA SI LLENÓ LOS CAMPOS
-      // ==================================================
       if (formData.password.trim() !== "") {
         if (formData.currentPassword.trim() === "") {
           setMessage("❌ Debes ingresar tu contraseña actual");
@@ -107,22 +132,16 @@ export default function EditProfile() {
         }
 
         try {
-          // Credencial con contraseña actual
           const credential = EmailAuthProvider.credential(
             user.email,
             formData.currentPassword
           );
 
           await reauthenticateWithCredential(currentUser, credential);
-          console.log("🔐 Usuario reautenticado");
-
           await updatePassword(currentUser, formData.password);
-          console.log("🔑 Contraseña actualizada");
 
           setMessage("🔑 Contraseña actualizada correctamente");
         } catch (err: any) {
-          console.error("❌ Error cambiando contraseña:", err);
-
           if (err.code === "auth/wrong-password") {
             setMessage("❌ La contraseña actual es incorrecta");
           } else {
@@ -134,9 +153,6 @@ export default function EditProfile() {
         }
       }
 
-      // ==================================================
-      // 2️⃣ ACTUALIZAR DATOS EN BACKEND
-      // ==================================================
       const updates: UpdateUserData = {
         name: `${formData.name} ${formData.lastName}`.trim(),
         email: formData.email,
@@ -144,7 +160,6 @@ export default function EditProfile() {
       };
 
       const updatedUser = await UserService.updateUser(user.id, updates);
-
       AuthService.saveUserToStorage(updatedUser);
 
       setMessage(prev =>
@@ -161,6 +176,12 @@ export default function EditProfile() {
     setLoading(false);
   };
 
+  /**
+   * Updates form state when input fields change.
+   *
+   * @param {string} field - The field being updated.
+   * @param {string} value - New value for the field.
+   */
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -189,7 +210,6 @@ export default function EditProfile() {
 
             <form className="space-y-5 text-gray-700" onSubmit={handleSubmit}>
 
-              {/* ------- CAMPOS NORMALES ------- */}
               <div className="flex flex-col">
                 <label className="font-semibold">Nombres:</label>
                 <input
@@ -234,7 +254,6 @@ export default function EditProfile() {
                 />
               </div>
 
-              {/* ------- CONTRASEÑA ACTUAL ------- */}
               <div className="flex flex-col relative">
                 <label className="font-semibold">Contraseña actual:</label>
                 <input
@@ -254,7 +273,6 @@ export default function EditProfile() {
                 </button>
               </div>
 
-              {/* ------- NUEVA CONTRASEÑA ------- */}
               <div className="flex flex-col relative">
                 <label className="font-semibold">Nueva contraseña (opcional):</label>
                 <input
@@ -265,7 +283,6 @@ export default function EditProfile() {
                   className="mt-1 border rounded-lg px-3 py-2 w-full pr-10"
                   disabled={loading}
                 />
-
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}

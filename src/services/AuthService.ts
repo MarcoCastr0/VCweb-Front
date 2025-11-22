@@ -1,6 +1,7 @@
 /**
  * @file AuthService.ts
- * @description Service for handling authentication with the backend API
+ * @description Handles authentication logic including email/password login, social login,
+ * token validation, registration, and local storage session handling.
  */
 
 import { 
@@ -14,14 +15,16 @@ import {
 } from './FirebaseClient';
 import type { User, AuthResponse } from './User';
 
-// 🔧 FIX: import.meta.env tipado correctamente
 const API_URL = (import.meta as any).env.VITE_API_URL || 'https://vcweb-back1.onrender.com';
 
 export class AuthService {
 
-  // ------------------------------------
-  // VALIDAR TOKEN
-  // ------------------------------------
+  /**
+   * Validates an ID token with the backend API.
+   * @param {string} idToken - Firebase ID token.
+   * @returns {Promise<AuthResponse>} Response with validation result.
+   * @throws {Error} If the backend returns an authentication error.
+   */
   static async validateIdToken(idToken: string): Promise<AuthResponse> {
     const response = await fetch(`${API_URL}/auth/validate`, {
       method: 'POST',
@@ -37,16 +40,19 @@ export class AuthService {
     return (await response.json()) as AuthResponse;
   }
 
-  // ------------------------------------
-  // LOGIN EMAIL / PASSWORD
-  // ------------------------------------
+  /**
+   * Logs in a user using email and password via Firebase and validates the token with the backend.
+   * @param {string} email - User email.
+   * @param {string} password - User password.
+   * @returns {Promise<AuthResponse>} Auth response from backend.
+   * @throws {Error} With friendly authentication error message.
+   */
   static async loginWithEmail(email: string, password: string): Promise<AuthResponse> {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const idToken = await userCredential.user.getIdToken();
 
       const result = await this.validateIdToken(idToken);
-
       if (!result.success) {
         throw new Error(result.message || 'Error en la autenticación');
       }
@@ -58,9 +64,17 @@ export class AuthService {
     }
   }
 
-  // ------------------------------------
-  // REGISTRO MANUAL (CORREGIDO)
-  // ------------------------------------
+  /**
+   * Registers a user via Firebase and then creates their profile in the backend database.
+   * @param {Object} userData - User registration data.
+   * @param {string} userData.email - Email address.
+   * @param {string} userData.password - Password.
+   * @param {string} userData.name - First name.
+   * @param {string} userData.lastName - Last name.
+   * @param {string} userData.age - Age.
+   * @returns {Promise<AuthResponse>} Response with created user data.
+   * @throws {Error} If registration or backend user creation fails.
+   */
   static async registerWithEmail(userData: {
     email: string;
     password: string;
@@ -69,15 +83,9 @@ export class AuthService {
     age: string;
   }): Promise<AuthResponse> {
     try {
-      console.log('🔄 Registrando usuario manual...', userData);
-
-      // 1. Crear usuario en Firebase
       const userCredential = await createUserWithEmailAndPassword(auth, userData.email, userData.password);
       const firebaseUser = userCredential.user;
 
-      console.log('✅ Usuario creado en Firebase:', firebaseUser.uid);
-
-      // 2. Payload para backend
       const fullName = `${userData.name} ${userData.lastName}`.trim();
       const userPayload = {
         id: firebaseUser.uid,
@@ -85,8 +93,6 @@ export class AuthService {
         email: userData.email,
         provider: 'manual' as const,
       };
-
-      console.log('📤 Enviando datos al backend:', userPayload);
 
       const createResponse = await fetch(`${API_URL}/users`, {
         method: 'POST',
@@ -99,12 +105,8 @@ export class AuthService {
         throw new Error(errorData.error || 'Error creando usuario en el backend');
       }
 
-      // 🔧 FIX: backendUser tipado correctamente
       const backendUser = (await createResponse.json()) as User;
 
-      console.log('✅ Usuario creado en backend:', backendUser);
-
-      // 3. Actualizar edad
       if (userData.age) {
         try {
           const updateResponse = await fetch(`${API_URL}/users/${firebaseUser.uid}`, {
@@ -117,9 +119,7 @@ export class AuthService {
             const updatedUser = (await updateResponse.json()) as User;
             backendUser.age = updatedUser.age;
           }
-        } catch (err) {
-          console.warn('⚠️ No se pudo actualizar edad', err);
-        }
+        } catch {}
       }
 
       return {
@@ -129,14 +129,16 @@ export class AuthService {
       };
 
     } catch (error: any) {
-      console.error('❌ Error en registro:', error);
       throw new Error(this.getAuthErrorMessage(error.code) || 'Error al registrar usuario');
     }
   }
 
-  // ------------------------------------
-  // LOGIN SOCIAL
-  // ------------------------------------
+  /**
+   * Authenticates a user using a social provider (Google, Facebook, GitHub).
+   * @param {'google' | 'facebook' | 'github'} provider - Social provider name.
+   * @returns {Promise<AuthResponse>} Backend authentication response.
+   * @throws {Error} If login or backend validation fails.
+   */
   static async loginWithProvider(provider: 'google' | 'facebook' | 'github'): Promise<AuthResponse> {
     try {
       const providerMap = {
@@ -163,9 +165,12 @@ export class AuthService {
     }
   }
 
-  // ------------------------------------
-  // ERRORES AMIGABLES
-  // ------------------------------------
+  /**
+   * Returns a friendly error message for Firebase authentication error codes.
+   * @param {string} code - Firebase error code.
+   * @returns {string} Friendly error message.
+   * @private
+   */
   private static getAuthErrorMessage(code: string): string {
     const messages: Record<string, string> = {
       'auth/invalid-email': 'El correo es inválido',
@@ -179,23 +184,37 @@ export class AuthService {
     return messages[code] || 'Error de autenticación';
   }
 
-  // ------------------------------------
-  // LOCAL STORAGE
-  // ------------------------------------
+  /**
+   * Saves a user to local storage.
+   * @param {User} user - User to save.
+   * @returns {void}
+   */
   static saveUserToStorage(user: User): void {
     localStorage.setItem('currentUser', JSON.stringify(user));
     localStorage.setItem('isAuthenticated', 'true');
   }
 
+  /**
+   * Retrieves the current user from local storage.
+   * @returns {User | null} Parsed user object or null.
+   */
   static getCurrentUser(): User | null {
     const data = localStorage.getItem('currentUser');
     return data ? (JSON.parse(data) as User) : null;
   }
 
+  /**
+   * Checks whether a user is authenticated.
+   * @returns {boolean} True if authenticated.
+   */
   static isAuthenticated(): boolean {
     return localStorage.getItem('isAuthenticated') === 'true';
   }
 
+  /**
+   * Logs out the user from Firebase and removes local storage session data.
+   * @returns {Promise<void>} Promise resolving when logout is complete.
+   */
   static async logout(): Promise<void> {
     try {
       await auth.signOut();
