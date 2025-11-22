@@ -4,24 +4,30 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-[#0aa6df] flex flex-col">
       {/* Header */}
-      <header className="flex justify-between items-center px-8 py-6">
+      <header className="flex justify-between items-center px-4 py-4 md:px-8 md:py-6">
+        {/* Logo */}
         <div className="flex items-center gap-3">
-          <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-lg">
-            <img src="/Logo.jpg" alt="VCweb Logo" className="w-14 h-14" />
+          <div className="w-14 h-14 md:w-20 md:h-20 bg-white rounded-full flex items-center justify-center shadow-lg">
+            <img
+              src="/Logo.jpg"
+              alt="VCweb Logo"
+              className="w-10 h-10 md:w-14 md:h-14"
+            />
           </div>
         </div>
 
-        <nav className="flex items-center gap-6">
+        {/* Nav */}
+        <nav className="flex items-center gap-3 md:gap-6">
           <Link
             to="/about"
-            className="text-white font-semibold text-lg hover:opacity-80 transition"
+            className="text-white font-semibold text-sm md:text-lg hover:opacity-80 transition"
           >
             Sobre nosotros
           </Link>
 
           <Link
             to="/login"
-            className="bg-white text-[#00bfff] px-5 py-2 rounded-md font-bold text-base hover:shadow-lg transition"
+            className="bg-white text-[#00bfff] px-3 py-1.5 md:px-5 md:py-2 rounded-lg font-semibold text-sm md:text-base hover:shadow-lg transition"
           >
             Iniciar sesión
           </Link>
@@ -57,9 +63,10 @@ const Home = () => {
 
       {/* Footer */}
       <footer className="text-center text-white py-8 space-y-2">
-        <button className="hover:underline font-semibold text-lg">
+        <Link to="/Sitemap" className="hover:underline font-semibold text-lg">
           Mapa del sitio
-        </button>
+        </Link>
+
         <p className="text-sm font-light">
           © 2025 VCweb. Todos los derechos reservados.
         </p>
