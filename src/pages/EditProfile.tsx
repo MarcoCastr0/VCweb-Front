@@ -26,19 +26,39 @@ export default function EditProfile() {
     loadUserData();
   }, []);
 
-  // Función para separar nombres y apellidos
+  // ✅ FUNCIÓN COMPLETA IGUAL A LA DE PROFILE
   const separateName = (fullName: string) => {
     if (!fullName) return { firstName: "", lastName: "" };
-    
-    const nameParts = fullName.split(' ');
+
+    const nameParts = fullName.trim().split(/\s+/);
+
     if (nameParts.length === 1) {
       return { firstName: nameParts[0], lastName: "" };
     }
-    
-    const firstName = nameParts[0];
-    const lastName = nameParts.slice(1).join(' ');
-    
-    return { firstName, lastName };
+
+    if (nameParts.length === 2) {
+      return { firstName: nameParts[0], lastName: nameParts[1] };
+    }
+
+    if (nameParts.length === 3) {
+      return {
+        firstName: `${nameParts[0]} ${nameParts[1]}`,
+        lastName: nameParts[2]
+      };
+    }
+
+    if (nameParts.length >= 4) {
+      const half = Math.floor(nameParts.length / 2);
+      return {
+        firstName: nameParts.slice(0, half).join(" "),
+        lastName: nameParts.slice(half).join(" ")
+      };
+    }
+
+    return {
+      firstName: nameParts[0],
+      lastName: nameParts.slice(1).join(" ")
+    };
   };
 
   const loadUserData = async () => {
@@ -49,24 +69,22 @@ export default function EditProfile() {
     }
 
     try {
-      // CARGAR DATOS ACTUALES DESDE LA BD
       const userFromDB = await UserService.getUserById(currentUser.id);
-      console.log("📊 Usuario cargado para editar:", userFromDB); // DEBUG
+      console.log("📊 Usuario cargado para editar:", userFromDB);
       setUser(userFromDB);
-      
-      // Separar nombre y apellido usando la misma lógica
+
       const { firstName, lastName } = separateName(userFromDB.name);
-      
+
       setFormData({
         name: firstName,
         lastName: lastName,
-        age: userFromDB.age || "",
+        age: userFromDB.age ? String(userFromDB.age) : "",
         email: userFromDB.email,
         password: ""
       });
     } catch (error) {
       console.error("Error cargando datos del usuario:", error);
-      // Fallback a localStorage
+
       const currentUser = AuthService.getCurrentUser();
       if (currentUser) {
         setUser(currentUser);
@@ -74,7 +92,7 @@ export default function EditProfile() {
         setFormData({
           name: firstName,
           lastName: lastName,
-          age: currentUser.age || "",
+          age: currentUser.age ? String(currentUser.age) : "",
           email: currentUser.email,
           password: ""
         });
@@ -84,7 +102,7 @@ export default function EditProfile() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!user) return;
 
     setLoading(true);
@@ -98,20 +116,17 @@ export default function EditProfile() {
       };
 
       console.log("📤 Actualizando usuario:", updates);
-      
-      // ACTUALIZAR EN LA BASE DE DATOS
+
       const updatedUser = await UserService.updateUser(user.id, updates);
-      
-      // ACTUALIZAR LOCALSTORAGE CON RESPUESTA DEL BACKEND
+
       AuthService.saveUserToStorage(updatedUser);
-      
+
       setMessage("✅ Perfil actualizado correctamente");
-      
-      // Redirigir después de 2 segundos
+
       setTimeout(() => {
         navigate("/profile");
       }, 2000);
-      
+
     } catch (error: any) {
       console.error("❌ Error actualizando perfil:", error);
       setMessage(`❌ Error: ${error.message || "No se pudo actualizar el perfil"}`);
@@ -127,35 +142,28 @@ export default function EditProfile() {
     }));
   };
 
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header */}
       <Header title="Editar perfil de usuario" showMenu={true} />
 
-      {/* Contenido */}
       <main className="flex-1 flex items-center justify-center px-4 py-16">
         <div className="w-full max-w-md">
           <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-200">
 
-            {/* Mensaje de estado */}
             {message && (
               <div className={`mb-4 p-3 rounded-lg text-center ${
-                message.includes('✅') 
-                  ? 'bg-green-100 text-green-700 border border-green-400' 
+                message.includes('✅')
+                  ? 'bg-green-100 text-green-700 border border-green-400'
                   : 'bg-red-100 text-red-700 border border-red-400'
               }`}>
                 {message}
               </div>
             )}
 
-            {/* Formulario */}
             <form className="space-y-5 text-gray-700" onSubmit={handleSubmit}>
 
-              {/* Nombres */}
               <div className="flex flex-col">
                 <label className="font-semibold">Nombres:</label>
                 <input
@@ -168,20 +176,18 @@ export default function EditProfile() {
                 />
               </div>
 
-              {/* Apellidos */}
               <div className="flex flex-col">
                 <label className="font-semibold">Apellidos:</label>
                 <input
                   type="text"
                   value={formData.lastName}
                   onChange={(e) => handleInputChange('lastName', e.target.value)}
-                  placeholder="Morales"
+                  placeholder="Pérez Gómez"
                   className="mt-1 border rounded-lg px-3 py-2 w-full focus:outline-none"
                   disabled={loading}
                 />
               </div>
 
-              {/* Edad */}
               <div className="flex flex-col">
                 <label className="font-semibold">Edad:</label>
                 <input
@@ -194,20 +200,18 @@ export default function EditProfile() {
                 />
               </div>
 
-              {/* Correo */}
               <div className="flex flex-col">
                 <label className="font-semibold">Correo:</label>
                 <input
                   type="email"
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
-                  placeholder="Juan@ejemplo.com"
+                  placeholder="correo@ejemplo.com"
                   className="mt-1 border rounded-lg px-3 py-2 w-full focus:outline-none"
                   disabled={loading}
                 />
               </div>
 
-              {/* Contraseña */}
               <div className="flex flex-col relative">
                 <label className="font-semibold">Nueva Contraseña (opcional):</label>
                 <input
@@ -219,7 +223,6 @@ export default function EditProfile() {
                   disabled={loading}
                 />
 
-                {/* Botón para mostrar/ocultar contraseña */}
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
@@ -232,21 +235,19 @@ export default function EditProfile() {
 
               <hr className="my-4" />
 
-              {/* Botón Guardar */}
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 className="btn w-full"
                 disabled={loading}
               >
                 {loading ? "Guardando..." : "💾 Guardar Cambios"}
               </button>
-             
+
             </form>
           </div>
         </div>
       </main>
 
-      {/* Footer */}
       <Footer />
     </div>
   );

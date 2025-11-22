@@ -100,14 +100,6 @@ export default function Profile() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await AuthService.logout();
-      navigate("/login");
-    } catch (error) {
-      console.error('Error al cerrar sesión:', error);
-    }
-  };
 
   if (loading) {
     return (
