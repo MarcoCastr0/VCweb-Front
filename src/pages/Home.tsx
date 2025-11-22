@@ -44,14 +44,14 @@ const Home = () => {
         <img
           src="/rueda.png"
           alt="Rueda pequeña"
-          className="w-50 h-50 opacity-90 absolute left-[30%] top-[28%]"
+          className="w-50 h-50 opacity-90 absolute left-[30%] top-[25%]"
         />
 
         {/* Imagen principal más centrada */}
         <img
           src="/login.png"
           alt="Imagen Home"
-          className="w-[420px] h-auto drop-shadow-xl mt-4 relative left-[50px]"
+          className="w-[420px] h-auto drop-shadow-xl mt-0 mx-auto"
         />
       </main>
 
