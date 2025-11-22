@@ -3,73 +3,75 @@
  * @description Service for handling user CRUD operations with the backend API
  */
 
-import type { User, UpdateUserData } from './User';
+import type { User, UpdateUserData } from "./User";
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+// 🔧 FIX: import.meta.env tipado correctamente
+const API_URL = (import.meta as any).env.VITE_API_URL || "http://localhost:3000";
 
 export class UserService {
-  // Obtener usuario por ID
+
+  // ------------------------------------
+  // GET USER BY ID
+  // ------------------------------------
   static async getUserById(id: string): Promise<User> {
     const response = await fetch(`${API_URL}/users/${id}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
     });
 
     if (!response.ok) {
-      throw new Error('Failed to fetch user');
+      throw new Error("Failed to fetch user");
     }
 
-    return response.json();
+    return (await response.json()) as User;
   }
 
-  // Actualizar usuario
+  // ------------------------------------
+  // UPDATE USER
+  // ------------------------------------
   static async updateUser(id: string, updates: UpdateUserData): Promise<User> {
     const response = await fetch(`${API_URL}/users/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updates),
     });
 
     if (!response.ok) {
-      throw new Error('Failed to update user');
+      throw new Error("Failed to update user");
     }
 
-    return response.json();
+    return (await response.json()) as User;
   }
 
-  // Eliminar usuario
+  // ------------------------------------
+  // DELETE USER
+  // ------------------------------------
   static async deleteUser(id: string): Promise<{ message: string }> {
     const response = await fetch(`${API_URL}/users/${id}`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
     });
 
     if (!response.ok) {
-      throw new Error('Failed to delete user');
+      throw new Error("Failed to delete user");
     }
 
-    return response.json();
+    return (await response.json()) as { message: string };
   }
 
-  // Obtener todos los usuarios (para admin)
+  // ------------------------------------
+  // GET ALL USERS
+  // ------------------------------------
   static async getAllUsers(): Promise<User[]> {
     const response = await fetch(`${API_URL}/users`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
     });
 
     if (!response.ok) {
-      throw new Error('Failed to fetch users');
+      throw new Error("Failed to fetch users");
     }
 
-    return response.json();
+    return (await response.json()) as User[];
   }
 }
