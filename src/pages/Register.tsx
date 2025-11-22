@@ -85,6 +85,47 @@ const handleSubmit = async (e: React.FormEvent) => {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-5">
+              
+              {/* Row 2: Name and LastName */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Name */}
+                <div>
+                  <label
+                    htmlFor="name"
+                    className="block text-gray-700 font-semibold mb-2"
+                  >
+                    Nombre
+                  </label>
+                  <input
+                    id="name"
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00bfff] focus:border-transparent"
+                    required
+                    disabled={loading}
+                  />
+                </div>
+
+                {/* Last Name */}
+                <div>
+                  <label
+                    htmlFor="lastName"
+                    className="block text-gray-700 font-semibold mb-2"
+                  >
+                    Apellidos
+                  </label>
+                  <input
+                    id="lastName"
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00bfff] focus:border-transparent"
+                    required
+                    disabled={loading}
+                  />
+                </div>
+              </div>
               {/* Row 1: Email and Age */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Email Input */}
@@ -120,47 +161,6 @@ const handleSubmit = async (e: React.FormEvent) => {
                     type="number"
                     value={age}
                     onChange={(e) => setAge(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00bfff] focus:border-transparent"
-                    required
-                    disabled={loading}
-                  />
-                </div>
-              </div>
-
-              {/* Row 2: Name and LastName */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Name */}
-                <div>
-                  <label
-                    htmlFor="name"
-                    className="block text-gray-700 font-semibold mb-2"
-                  >
-                    Nombre
-                  </label>
-                  <input
-                    id="name"
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00bfff] focus:border-transparent"
-                    required
-                    disabled={loading}
-                  />
-                </div>
-
-                {/* Last Name */}
-                <div>
-                  <label
-                    htmlFor="lastName"
-                    className="block text-gray-700 font-semibold mb-2"
-                  >
-                    Apellidos
-                  </label>
-                  <input
-                    id="lastName"
-                    type="text"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00bfff] focus:border-transparent"
                     required
                     disabled={loading}

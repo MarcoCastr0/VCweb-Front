@@ -183,13 +183,7 @@ export default function Profile() {
                 ✏️ Editar Información
               </button>
 
-              <button 
-                type="button" 
-                className="btn bg-blue-500 hover:bg-blue-600 text-white"
-                onClick={handleLogout}
-              >
-                🚪 Cerrar Sesión
-              </button>
+              
 
               <button 
                 type="button" 

@@ -11,7 +11,8 @@ export interface User {
   provider: 'google' | 'facebook' | 'github' | 'manual';
   createdAt: string;
   updatedAt: string;
-  age?: string;
+  age?: number;
+
 }
 
 export interface AuthResponse {
