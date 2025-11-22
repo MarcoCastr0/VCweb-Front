@@ -1,33 +1,71 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-import { useNavigate } from "react-router-dom"; // 👈 Importa useNavigate
+import { AuthService } from "../services/AuthService";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const navigate = useNavigate(); // 👈 Aquí
+  const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!email || !password) {
+      setError("Por favor completa todos los campos");
+      return;
+    }
 
-    console.log("Login:", { email, password });
+    setLoading(true);
+    setError("");
 
-    navigate("/start-meeting"); // 👈 Redirige aquí
+    try {
+      const result = await AuthService.loginWithEmail(email, password);
+      
+      if (result.success) {
+        AuthService.saveUserToStorage(result.user);
+        navigate("/start-meeting");
+      } else {
+        setError(result.message || "Error al iniciar sesión");
+      }
+    } catch (error: any) {
+      setError(error.message || "Error al iniciar sesión");
+    } finally {
+      setLoading(false);
+    }
   };
 
+  const handleSocialLogin = async (provider: 'google' | 'facebook' ) => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const result = await AuthService.loginWithProvider(provider);
+      
+      if (result.success) {
+        AuthService.saveUserToStorage(result.user);
+        navigate("/start-meeting");
+      } else {
+        setError(result.message || `Error al iniciar sesión con ${provider}`);
+      }
+    } catch (error: any) {
+      setError(error.message || `Error al iniciar sesión con ${provider}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header title="Conéctate con tu equipo hoy" showMenu={false} />
 
-      {/* Login Form */}
       <main className="flex-1 flex items-center justify-center px-6 py-16">
         <div className="w-full max-w-md">
-
           <div className="bg-white rounded-2xl shadow-lg p-8">
             <h2 className="text-3xl font-bold text-gray-800 text-center mb-2">
               Inicia sesión
@@ -36,8 +74,13 @@ const Login = () => {
               Accede a tu cuenta para continuar
             </p>
 
+            {error && (
+              <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-center">
+                {error}
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Email Input */}
               <div>
                 <label
                   htmlFor="email"
@@ -53,10 +96,10 @@ const Login = () => {
                   placeholder="ejemplo@correo.com"
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00bfff] focus:border-transparent"
                   required
+                  disabled={loading}
                 />
               </div>
 
-              {/* Password Input */}
               <div>
                 <label
                   htmlFor="password"
@@ -72,11 +115,13 @@ const Login = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00bfff] focus:border-transparent pr-12"
                     required
+                    disabled={loading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    disabled={loading}
                   >
                     {showPassword ? (
                       <svg
@@ -117,7 +162,6 @@ const Login = () => {
                 </div>
               </div>
 
-              {/* Forgot Password Link */}
               <div className="text-center">
                 <Link
                   to="/forgot-password"
@@ -127,12 +171,15 @@ const Login = () => {
                 </Link>
               </div>
 
-              {/* Submit Button */}
-              <button type="submit" className="btn">Iniciar sesión</button>
-
+              <button 
+                type="submit" 
+                className="btn w-full"
+                disabled={loading}
+              >
+                {loading ? "Cargando..." : "Iniciar sesión"}
+              </button>
             </form>
 
-            {/* Register Link */}
             <p className="text-center mt-6 text-gray-700">
               ¿No tienes cuenta?{" "}
               <Link
@@ -143,16 +190,18 @@ const Login = () => {
               </Link>
             </p>
 
-            {/* Divider */}
             <div className="flex items-center my-6">
               <div className="flex-1 border-t border-gray-300"></div>
               <span className="px-4 text-gray-500 font-medium">o</span>
               <div className="flex-1 border-t border-gray-300"></div>
             </div>
 
-            {/* Social Login Buttons */}
             <div className="flex justify-center gap-6">
-              <button className="w-12 h-12 rounded-full bg-white border-2 border-gray-200 flex items-center justify-center hover:border-[#00bfff] hover:shadow-md transition">
+              <button 
+                onClick={() => handleSocialLogin('google')}
+                disabled={loading}
+                className="w-12 h-12 rounded-full bg-white border-2 border-gray-200 flex items-center justify-center hover:border-[#00bfff] hover:shadow-md transition"
+              >
                 <svg className="w-6 h-6" viewBox="0 0 24 24">
                   <path
                     fill="#4285F4"
@@ -173,13 +222,11 @@ const Login = () => {
                 </svg>
               </button>
 
-              <button className="w-12 h-12 rounded-full bg-[#24292e] flex items-center justify-center hover:bg-[#1a1e21] hover:shadow-md transition">
-                <svg className="w-7 h-7" fill="white" viewBox="0 0 24 24">
-                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
-                </svg>
-              </button>
-
-              <button className="w-12 h-12 rounded-full bg-[#1877F2] flex items-center justify-center hover:bg-[#145dbf] hover:shadow-md transition">
+              <button 
+                onClick={() => handleSocialLogin('facebook')}
+                disabled={loading}
+                className="w-12 h-12 rounded-full bg-[#1877F2] flex items-center justify-center hover:bg-[#145dbf] hover:shadow-md transition"
+              >
                 <svg className="w-7 h-7" fill="white" viewBox="0 0 24 24">
                   <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                 </svg>
