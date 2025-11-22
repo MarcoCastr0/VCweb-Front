@@ -26,15 +26,13 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // Estado para controlar el modal
+  const [showModal, setShowModal] = useState(false);
+
   useEffect(() => {
     loadUserFromDatabase();
   }, []);
 
-  /**
-   * Loads the authenticated user's data from the database.
-   * Falls back to local storage data if fetching fails.
-   * Redirects to login if no user is authenticated.
-   */
   const loadUserFromDatabase = async () => {
     const currentUser = AuthService.getCurrentUser();
     if (!currentUser) {
@@ -47,22 +45,16 @@ export default function Profile() {
       console.log("📊 Usuario desde BD:", userFromDB);
 
       setUser(userFromDB);
-      AuthService.saveUserToStorage(userFromDB); // update localStorage with fresh data
+      AuthService.saveUserToStorage(userFromDB);
     } catch (error: any) {
       console.error("Error cargando usuario:", error);
       setError("Error al cargar los datos del usuario");
-      setUser(currentUser); // fallback
+      setUser(currentUser);
     } finally {
       setLoading(false);
     }
   };
 
-  /**
-   * Splits Hispanic-style full names into first and last name parts.
-   *
-   * @param {string} fullName - The user's complete name.
-   * @returns {{ firstName: string, lastName: string }} Structured name data.
-   */
   const separateHispanicName = (fullName: string) => {
     if (!fullName) return { firstName: "", lastName: "" };
 
@@ -97,26 +89,13 @@ export default function Profile() {
     return { firstName, lastName };
   };
 
-  /**
-   * Redirects the user to the edit profile page.
-   */
   const handleEdit = () => {
     navigate("/edit-profile");
   };
 
-  /**
-   * Deletes the user's account after confirmation.
-   * Logs them out and redirects to login.
-   */
+  // 🔥 NUEVO: confirmación mediante modal
   const handleDeleteAccount = async () => {
-    if (
-      !user ||
-      !window.confirm(
-        "¿Estás seguro de que quieres eliminar tu cuenta? Esta acción no se puede deshacer."
-      )
-    ) {
-      return;
-    }
+    if (!user) return;
 
     try {
       await UserService.deleteUser(user.id);
@@ -201,7 +180,7 @@ export default function Profile() {
               <button
                 type="button"
                 className="btn_primary"
-                onClick={handleDeleteAccount}
+                onClick={() => setShowModal(true)}
               >
                 🗑️ Eliminar cuenta
               </button>
@@ -211,6 +190,37 @@ export default function Profile() {
       </main>
 
       <Footer />
+
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-lg p-6 w-80">
+            <h2 className="text-lg font-semibold mb-3 text-center">
+              Confirmar eliminación
+            </h2>
+
+            <p className="text-gray-700 text-center mb-6">
+              ¿Seguro que deseas eliminar tu cuenta? <br />
+              <strong>Esta acción no se puede deshacer.</strong>
+            </p>
+
+            <div className="flex justify-between gap-3">
+              <button
+                className="flex-1 py-2 bg-gray-300 text-black rounded-lg"
+                onClick={() => setShowModal(false)}
+              >
+                Cancelar
+              </button>
+
+              <button
+                className="flex-1 py-2 bg-red-600 text-white rounded-lg"
+                onClick={handleDeleteAccount}
+              >
+                Sí, eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
