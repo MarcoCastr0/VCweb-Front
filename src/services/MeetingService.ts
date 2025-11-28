@@ -1,9 +1,4 @@
-/**
- * Service for managing meeting operations via Backend 1 (Firestore).
- *
- * Handles meeting creation, validation, listing and closing.
- */
-const API_URL = (import.meta as any).env.VITE_API_URL; // mismo backend que AuthService
+const API_URL = (import.meta as any).env.VITE_API_URL;
 
 export interface Meeting {
   id?: string;
@@ -15,13 +10,17 @@ export interface Meeting {
   updatedAt?: string;
 }
 
+interface ApiResponse<T> {
+  success?: boolean;
+  message?: string;
+  meetingId?: string;
+  meeting?: T;
+  meetings?: T[];
+  participantCount?: number;
+  [key: string]: any;
+}
+
 export class MeetingService {
-  /**
-   * Creates a new meeting room.
-   *
-   * @param {string} hostId - ID of the user creating the meeting.
-   * @returns {Promise<{success: boolean; meetingId: string; message?: string}>}
-   */
   static async createMeeting(hostId: string): Promise<{
     success: boolean;
     meetingId: string;
@@ -34,7 +33,7 @@ export class MeetingService {
         body: JSON.stringify({ hostId }),
       });
 
-      const data = await response.json();
+      const data = (await response.json()) as ApiResponse<Meeting>;
 
       if (!response.ok || !data.success) {
         return {
@@ -46,7 +45,7 @@ export class MeetingService {
 
       return {
         success: true,
-        meetingId: data.meetingId,
+        meetingId: data.meetingId || "",
       };
     } catch (error: any) {
       return {
@@ -57,12 +56,6 @@ export class MeetingService {
     }
   }
 
-  /**
-   * Validates if a meeting code exists and is active.
-   *
-   * @param {string} meetingId - Meeting code.
-   * @returns {Promise<{success: boolean; meeting?: Meeting; message?: string}>}
-   */
   static async validateMeeting(meetingId: string): Promise<{
     success: boolean;
     meeting?: Meeting;
@@ -74,7 +67,7 @@ export class MeetingService {
         headers: { "Content-Type": "application/json" },
       });
 
-      const data = await response.json();
+      const data = (await response.json()) as ApiResponse<Meeting>;
 
       if (!response.ok || !data.success) {
         return {
@@ -95,20 +88,18 @@ export class MeetingService {
     }
   }
 
-  /**
-   * Gets all meetings created by a user.
-   *
-   * @param {string} userId - User identifier (hostId).
-   * @returns {Promise<{success: boolean; meetings?: Meeting[]; message?: string}>}
-   */
   static async getUserMeetings(userId: string): Promise<{
     success: boolean;
     meetings?: Meeting[];
     message?: string;
   }> {
     try {
-      const response = await fetch(`${API_URL}/api/meetings/user/${userId}`);
-      const data = await response.json();
+      const response = await fetch(`${API_URL}/api/meetings/user/${userId}`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      const data = (await response.json()) as ApiResponse<Meeting>;
 
       if (!response.ok || !data.success) {
         return {
@@ -119,7 +110,7 @@ export class MeetingService {
 
       return {
         success: true,
-        meetings: data.meetings as Meeting[],
+        meetings: (data.meetings || []) as Meeting[],
       };
     } catch (error: any) {
       return {
@@ -129,12 +120,6 @@ export class MeetingService {
     }
   }
 
-  /**
-   * Closes a meeting by meetingId.
-   *
-   * @param {string} meetingId - Meeting code.
-   * @returns {Promise<{success: boolean; message?: string}>}
-   */
   static async closeMeeting(meetingId: string): Promise<{
     success: boolean;
     message?: string;
@@ -144,7 +129,7 @@ export class MeetingService {
         method: "DELETE",
       });
 
-      const data = await response.json();
+      const data = (await response.json()) as ApiResponse<Meeting>;
 
       if (!response.ok || !data.success) {
         return {
