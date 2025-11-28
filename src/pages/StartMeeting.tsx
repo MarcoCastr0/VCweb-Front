@@ -1,43 +1,85 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import { MeetingService } from "../services/MeetingService";
+import { AuthService } from "../services/AuthService";
 
-/**
- * StartMeeting page component.
- * 
- * Provides UI for starting a new meeting or joining an existing one 
- * by entering a meeting code. It includes navigation, input handling, 
- * and layout for the meeting start section.
- * 
- * @component
- * @returns {JSX.Element} The rendered StartMeeting page.
- */
 const StartMeeting = () => {
+  const [meetingCode, setMeetingCode] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   /**
-   * Navigates the user to the video call page to start a new meeting.
-   * 
-   * @function
-   * @returns {void}
+   * Creates a new meeting in Backend 1 and redirects to video-call.
    */
-  const handleNewMeeting = () => {
-    navigate("/video-call");
+  const handleNewMeeting = async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const user = AuthService.getCurrentUser();
+      if (!user) {
+        setError("Debes iniciar sesión primero");
+        navigate("/login");
+        return;
+      }
+
+      const result = await MeetingService.createMeeting(user.id);
+
+      if (!result.success) {
+        setError(result.message || "Error al crear la reunión");
+        return;
+      }
+
+      navigate(`/video-call?room=${result.meetingId}`);
+    } catch (err: any) {
+      setError(err.message || "Error inesperado al crear reunión");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Validates meeting code in Backend 1 and redirects to video-call.
+   */
+  const handleJoinMeeting = async () => {
+    if (!meetingCode.trim()) {
+      setError("Por favor ingresa un código de reunión");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const code = meetingCode.toUpperCase().trim();
+      const result = await MeetingService.validateMeeting(code);
+
+      if (!result.success) {
+        setError(result.message || "Código de reunión inválido");
+        return;
+      }
+
+      navigate(`/video-call?room=${code}`);
+    } catch (err: any) {
+      setError(err.message || "Error inesperado al validar reunión");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <Header title="Inicia una reunion" showMenu={true} />
 
-      <main
-        className="flex-1 w-full px-6 lg:px-16 py-6 flex flex-col lg:flex-row 
-                 items-center justify-center gap-16"
-      >
+      <main className="flex-1 w-full px-6 lg:px-16 py-6 flex flex-col lg:flex-row 
+                 items-center justify-center gap-16">
         <section className="max-w-xl">
           <h1 className="text-4xl font-bold text-gray-900 leading-snug mb-4">
             Video conferencias seguras <br /> para tus proyectos digitales.
           </h1>
-
           <p className="text-gray-600 text-lg leading-relaxed">
             Conéctate, colabora y <br />
             gestiona tus proyectos <br />
@@ -50,19 +92,30 @@ const StartMeeting = () => {
             Comienza Ahora
           </h3>
 
+          {error && (
+            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
+
           <div className="flex gap-3 mb-5">
             <input
               type="text"
-              placeholder="Introduce un codigo"
+              placeholder="Introduce un código"
+              value={meetingCode}
+              onChange={(e) => setMeetingCode(e.target.value.toUpperCase())}
+              maxLength={6}
+              disabled={loading}
               className="flex-1 px-4 py-3 border border-gray-300 rounded-lg
                          focus:outline-none focus:ring-2 focus:ring-[#04A3EA]"
             />
-
             <button
+              onClick={handleJoinMeeting}
+              disabled={loading}
               className="bg-[#04A3EA] text-white font-semibold px-5 rounded-lg
-                         transition-all hover:bg-[#0087C5] shadow-sm"
+                         transition-all hover:bg-[#0087C5] shadow-sm disabled:opacity-50"
             >
-              Unirme
+              {loading ? "..." : "Unirme"}
             </button>
           </div>
 
@@ -70,6 +123,7 @@ const StartMeeting = () => {
             type="button" 
             className="btn"
             onClick={handleNewMeeting}
+            disabled={loading}
           >
             ✚ Nueva Reunión
           </button>
