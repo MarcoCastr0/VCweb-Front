@@ -74,8 +74,10 @@ const StartMeeting = () => {
     <div className="min-h-screen bg-white flex flex-col">
       <Header title="Inicia una reunion" showMenu={true} />
 
-      <main className="flex-1 w-full px-6 lg:px-16 py-6 flex flex-col lg:flex-row 
-                 items-center justify-center gap-16">
+      <main
+        className="flex-1 w-full px-6 lg:px-16 py-6 flex flex-col lg:flex-row 
+                 items-center justify-center gap-16"
+      >
         <section className="max-w-xl">
           <h1 className="text-4xl font-bold text-gray-900 leading-snug mb-4">
             Video conferencias seguras <br /> para tus proyectos digitales.
@@ -112,15 +114,17 @@ const StartMeeting = () => {
             <button
               onClick={handleJoinMeeting}
               disabled={loading}
-              className="bg-[#04A3EA] text-white font-semibold px-5 rounded-lg
-                         transition-all hover:bg-[#0087C5] shadow-sm disabled:opacity-50"
+              className="bg-[#04A3EA] text-white font-semibold px-5 py-2 rounded-lg
+             transition-all hover:bg-[#0087C5] hover:shadow-md
+             focus-visible:ring-2 focus-visible:ring-white
+             disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "..." : "Unirme"}
             </button>
           </div>
 
-          <button 
-            type="button" 
+          <button
+            type="button"
             className="btn"
             onClick={handleNewMeeting}
             disabled={loading}
