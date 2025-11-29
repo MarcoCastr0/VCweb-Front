@@ -21,6 +21,7 @@ export default function VideoCall() {
   const [connected, setConnected] = useState(false);
   const [loadingMeeting, setLoadingMeeting] = useState(true);
   const [meetingError, setMeetingError] = useState("");
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const initialized = useRef(false);
@@ -28,10 +29,17 @@ export default function VideoCall() {
   const roomId = searchParams.get("room");
   const currentUser = AuthService.getCurrentUser();
 
+  /** === CONTADOR DE DURACIÓN === */
+  const [callDuration, setCallDuration] = useState(0);
+  const durationRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  /** =============================
+   *  INIT
+   * ============================= */
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
@@ -42,11 +50,11 @@ export default function VideoCall() {
         return;
       }
 
-      // 1) Validar reunión en Backend 1
+      // validar reunión
       setLoadingMeeting(true);
       setMeetingError("");
-      const result = await MeetingService.validateMeeting(roomId);
 
+      const result = await MeetingService.validateMeeting(roomId);
       if (!result.success) {
         setMeetingError(result.message || "Reunión no válida");
         navigate("/start-meeting");
@@ -55,10 +63,10 @@ export default function VideoCall() {
 
       setLoadingMeeting(false);
 
-      // 2) Conectar WebSocket con Backend 2
+      // conectar websocket
       WebSocketService.connect(currentUser.id);
 
-      WebSocketService.onMessage((data) => {
+      WebSocketService.onMessage((data: any) => {
         switch (data.action) {
           case "joined":
             setConnected(true);
@@ -105,14 +113,28 @@ export default function VideoCall() {
 
     init();
 
-    // cleanup SOLO al desmontar la página
     return () => {
-      console.log("🧹 Cleanup VideoCall: leaving room & disconnecting WS");
+      console.log("🧹 Cleanup VideoCall");
       WebSocketService.leaveRoom();
       WebSocketService.disconnect();
       initialized.current = false;
     };
-  }, []); // <-- sin dependencias, se ejecuta una sola vez
+  }, []);
+
+  /** =============================
+   * INICIAR CONTADOR AL CONECTAR
+   * ============================= */
+  useEffect(() => {
+    if (connected) {
+      durationRef.current = setInterval(() => {
+        setCallDuration((prev) => prev + 1);
+      }, 1000);
+    }
+
+    return () => {
+      if (durationRef.current) clearInterval(durationRef.current);
+    };
+  }, [connected]);
 
   useEffect(() => {
     scrollToBottom();
@@ -131,10 +153,22 @@ export default function VideoCall() {
     }
   };
 
+  /** ============================
+   * FINALIZAR LLAMADA
+   * ============================ */
   const handleEndCall = () => {
+    if (durationRef.current) clearInterval(durationRef.current);
+
+    const finalDuration = callDuration;
+    console.log("Duración final:", finalDuration, "segundos");
+
+    // enviar duración al backend si quieres:
+    // await MeetingService.endCall(roomId, finalDuration);
+
     WebSocketService.leaveRoom();
     WebSocketService.disconnect();
     initialized.current = false;
+
     navigate("/start-meeting");
   };
 
@@ -162,12 +196,16 @@ export default function VideoCall() {
     );
   }
 
+  /** ============================
+   * UI
+   * ============================ */
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header title="Llamada en vivo" showMenu={true} />
 
       <main className="flex-1 flex flex-col lg:flex-row items-start justify-center gap-10 px-6 py-10">
-        {/* Área de video */}
+        
+        {/* VIDEO CARD */}
         <div
           className="w-full max-w-3xl bg-white rounded-2xl shadow-md border border-gray-200 p-6 flex flex-col items-center justify-between"
           style={{ height: "390px" }}
@@ -176,13 +214,21 @@ export default function VideoCall() {
             <span className="text-sm text-gray-600">
               Room: <strong>{roomId}</strong>
             </span>
-            <span
-              className={`text-sm font-semibold ${
-                connected ? "text-green-600" : "text-red-600"
-              }`}
-            >
-              {connected ? "🟢 Conectado" : "🔴 Desconectado"}
-            </span>
+
+            <div className="text-right">
+              <span
+                className={`text-sm font-semibold ${
+                  connected ? "text-green-600" : "text-red-600"
+                }`}
+              >
+                {connected ? "🟢 Conectado" : "🔴 Desconectado"}
+              </span>
+
+              <div className="text-xs text-gray-700">
+                Tiempo: {Math.floor(callDuration / 60)}m{" "}
+                {callDuration % 60}s
+              </div>
+            </div>
           </div>
 
           <div className="flex-1 flex items-center justify-center">
@@ -207,7 +253,7 @@ export default function VideoCall() {
           </div>
         </div>
 
-        {/* Panel de chat */}
+        {/* CHAT PANEL */}
         <div
           className="w-full max-w-xs bg-white rounded-2xl shadow-md border border-gray-200 p-4 flex flex-col"
           style={{ height: "390px" }}
