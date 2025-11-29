@@ -114,8 +114,8 @@ const StartMeeting = () => {
             <button
               onClick={handleJoinMeeting}
               disabled={loading}
-              className="bg-[#04A3EA] text-white font-semibold px-5 py-2 rounded-lg
-             transition-all hover:bg-[#0087C5] hover:shadow-md
+              className="bg-[#0066A1] text-white font-semibold px-5 py-2 rounded-lg
+             transition-all hover:bg-[#004F80] hover:shadow-md
              focus-visible:ring-2 focus-visible:ring-white
              disabled:opacity-50 disabled:cursor-not-allowed"
             >
