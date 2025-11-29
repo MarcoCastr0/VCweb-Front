@@ -27,9 +27,12 @@ const Home = () => {
           className="flex items-center gap-3 md:gap-6"
           aria-label="Navegación principal"
         >
-           <Link
+          <Link
             to="/about"
-            className="text-white font-semibold text-sm md:text-lg hover:opacity-80 transition"
+            className="home-link font-semibold text-sm md:text-lg
+             drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]
+             focus-visible:outline focus-visible:outline-2 focus-visible:outline-white
+             rounded-md px-1 transition"
           >
             Sobre nosotros
           </Link>
@@ -76,7 +79,11 @@ const Home = () => {
         className="text-center text-white py-8 space-y-2"
         role="contentinfo"
       >
-         <Link to="/Sitemap" className="hover:underline font-semibold text-lg">
+        <Link
+          to="/Sitemap"
+          className="home-link font-semibold text-lg
+             focus-visible:ring-2 focus-visible:ring-white px-2 rounded-md"
+        >
           Mapa del sitio
         </Link>
 

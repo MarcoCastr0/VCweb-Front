@@ -41,3 +41,8 @@ div.bg-white.p-12 {
 a {
   @apply text-[#0074CC] underline-offset-4 hover:underline;
 }
+
+/* Enlaces blancos solo en HOME */
+.home-link {
+  @apply text-white underline-offset-4 hover:underline;
+}
