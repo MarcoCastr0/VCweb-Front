@@ -23,7 +23,7 @@ div.bg-white.p-12 {
 
 /* Botón Primario – Cumple WCAG AA */
 .btn {
-  @apply bg-[#0066A1] text-white font-semibold
+  @apply bg-[#0074CC] text-white font-semibold
   py-3 px-6 text-[16px]
   rounded-xl transition-all hover:bg-[#004F80] shadow-lg
   w-full max-w-[300px] mx-auto block;
