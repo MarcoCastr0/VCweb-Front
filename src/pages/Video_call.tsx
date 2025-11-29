@@ -1,204 +1,270 @@
-import { useEffect, useState } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
-import { MeetingService, type Meeting } from '../services/MeetingService';
-import { AuthService } from '../services/AuthService';
+import { useState, useEffect, useRef } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
+import { MicOff, VideoOff, PhoneOff, User } from "lucide-react";
+import { WebSocketService } from "../services/WebSocketService";
+import { AuthService } from "../services/AuthService";
+import { MeetingService } from "../services/MeetingService";
 
-const VideoCall = () => {
+interface Message {
+  senderId: string;
+  senderName?: string;
+  text: string;
+  timestamp: string;
+}
+
+export default function VideoCall() {
   const [searchParams] = useSearchParams();
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [newMessage, setNewMessage] = useState("");
+  const [connected, setConnected] = useState(false);
+  const [loadingMeeting, setLoadingMeeting] = useState(true);
+  const [meetingError, setMeetingError] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const [meeting, setMeeting] = useState<Meeting | null>(null);
-  const [error, setError] = useState<string>("");
-  const [loading, setLoading] = useState(true);
-  const [hasJoined, setHasJoined] = useState(false);
+  const initialized = useRef(false);
 
-  const meetingId = searchParams.get('room');
+  const roomId = searchParams.get("room");
+  const currentUser = AuthService.getCurrentUser();
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   useEffect(() => {
-    if (!meetingId) {
-      navigate('/start-meeting');
-      return;
-    }
+    if (initialized.current) return;
+    initialized.current = true;
 
-    joinMeeting();
-
-    // IMPORTANTE: Cleanup al salir de la página
-    return () => {
-      if (hasJoined && meetingId) {
-        handleLeaveMeeting();
+    const init = async () => {
+      if (!roomId || !currentUser) {
+        navigate("/start-meeting");
+        return;
       }
+
+      // 1) Validar reunión en Backend 1
+      setLoadingMeeting(true);
+      setMeetingError("");
+      const result = await MeetingService.validateMeeting(roomId);
+
+      if (!result.success) {
+        setMeetingError(result.message || "Reunión no válida");
+        navigate("/start-meeting");
+        return;
+      }
+
+      setLoadingMeeting(false);
+
+      // 2) Conectar WebSocket con Backend 2
+      WebSocketService.connect(currentUser.id);
+
+      WebSocketService.onMessage((data) => {
+        switch (data.action) {
+          case "joined":
+            setConnected(true);
+            break;
+
+          case "recent-messages":
+            if (Array.isArray(data.payload)) {
+              setMessages(
+                data.payload.map((msg: any) => ({
+                  senderId: msg.senderId,
+                  senderName: msg.senderName,
+                  text: msg.content || msg.text,
+                  timestamp: new Date(msg.timestamp).toISOString(),
+                }))
+              );
+            }
+            break;
+
+          case "chat-message":
+            setMessages((prev) => [
+              ...prev,
+              {
+                senderId: data.payload.senderId,
+                senderName: data.payload.senderName,
+                text: data.payload.content || data.payload.text,
+                timestamp: new Date().toISOString(),
+              },
+            ]);
+            break;
+        }
+      });
+
+      const checkAndJoin = () => {
+        if (WebSocketService.isConnected()) {
+          WebSocketService.joinRoom(roomId);
+          setConnected(true);
+        } else {
+          setTimeout(checkAndJoin, 150);
+        }
+      };
+
+      checkAndJoin();
     };
-  }, [meetingId]);
 
-  /**
-   * Join the meeting and increment participant count
-   */
-  const joinMeeting = async () => {
-    try {
-      const user = AuthService.getCurrentUser();
-      if (!user) {
-        navigate('/login');
-        return;
-      }
+    init();
 
-      if (!meetingId) return;
+    // cleanup SOLO al desmontar la página
+    return () => {
+      console.log("🧹 Cleanup VideoCall: leaving room & disconnecting WS");
+      WebSocketService.leaveRoom();
+      WebSocketService.disconnect();
+      initialized.current = false;
+    };
+  }, []); // <-- sin dependencias, se ejecuta una sola vez
 
-      // First check if can join
-      const canJoinResult = await MeetingService.canJoinMeeting(meetingId);
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
-      if (!canJoinResult.success || !canJoinResult.canJoin) {
-        setError(canJoinResult.message || "No puedes unirte a esta reunión");
-        setTimeout(() => navigate('/start-meeting'), 3000);
-        return;
-      }
+  const handleSendMessage = () => {
+    if (!newMessage.trim() || !connected) return;
+    WebSocketService.sendMessage(newMessage, currentUser?.name);
+    setNewMessage("");
+  };
 
-      // Join the meeting
-      const joinResult = await MeetingService.joinMeeting(meetingId, user.id);
-
-      if (!joinResult.success) {
-        setError(joinResult.message || "Error al unirse");
-        setTimeout(() => navigate('/start-meeting'), 3000);
-        return;
-      }
-
-      setMeeting(joinResult.meeting || null);
-      setHasJoined(true);
-      setLoading(false);
-
-    } catch (err: any) {
-      setError(err.message || "Error inesperado");
-      setLoading(false);
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
     }
   };
 
-  /**
-   * Leave the meeting and decrement participant count
-   */
-  const handleLeaveMeeting = async () => {
-    if (!meetingId || !hasJoined) return;
-
-    try {
-      await MeetingService.leaveMeeting(meetingId);
-      setHasJoined(false);
-    } catch (err) {
-      console.error("Error al salir de la reunión:", err);
-    }
+  const handleEndCall = () => {
+    WebSocketService.leaveRoom();
+    WebSocketService.disconnect();
+    initialized.current = false;
+    navigate("/start-meeting");
   };
 
-  /**
-   * User clicks "Leave Meeting" button
-   */
-  const onLeaveMeeting = async () => {
-    await handleLeaveMeeting();
-    navigate('/start-meeting');
-  };
-
-  // Loading state
-  if (loading) {
+  if (loadingMeeting) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-white mx-auto mb-4"></div>
-          <p className="text-white text-lg">Uniéndose a la reunión...</p>
-        </div>
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <Header title="Llamada en vivo" showMenu={true} />
+        <main className="flex-1 flex items-center justify-center">
+          <p className="text-gray-600">Validando reunión...</p>
+        </main>
+        <Footer />
       </div>
     );
   }
 
-  // Error state
-  if (error) {
+  if (meetingError) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900">
-        <div className="text-center bg-white rounded-lg p-8 max-w-md">
-          <div className="text-red-500 text-5xl mb-4">⚠️</div>
-          <h2 className="text-xl font-bold text-gray-800 mb-2">Error</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <button
-            onClick={() => navigate('/start-meeting')}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
-          >
-            Volver al inicio
-          </button>
-        </div>
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <Header title="Llamada en vivo" showMenu={true} />
+        <main className="flex-1 flex items-center justify-center">
+          <p className="text-red-600">{meetingError}</p>
+        </main>
+        <Footer />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 flex flex-col">
-      {/* Header with meeting info */}
-      <header className="bg-gray-800 text-white p-4 shadow-lg">
-        <div className="container mx-auto flex justify-between items-center">
-          <div>
-            <h1 className="text-xl font-bold">
-              📋 Reunión: {meeting?.meetingId}
-            </h1>
-            {meeting && (
-              <p className="text-sm text-gray-300">
-                👥 {MeetingService.getMeetingStats(meeting)}
-              </p>
-            )}
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <Header title="Llamada en vivo" showMenu={true} />
+
+      <main className="flex-1 flex flex-col lg:flex-row items-start justify-center gap-10 px-6 py-10">
+        {/* Área de video */}
+        <div
+          className="w-full max-w-3xl bg-white rounded-2xl shadow-md border border-gray-200 p-6 flex flex-col items-center justify-between"
+          style={{ height: "390px" }}
+        >
+          <div className="w-full flex justify-between items-center mb-2">
+            <span className="text-sm text-gray-600">
+              Room: <strong>{roomId}</strong>
+            </span>
+            <span
+              className={`text-sm font-semibold ${
+                connected ? "text-green-600" : "text-red-600"
+              }`}
+            >
+              {connected ? "🟢 Conectado" : "🔴 Desconectado"}
+            </span>
           </div>
-          <button
-            onClick={onLeaveMeeting}
-            className="bg-red-600 hover:bg-red-700 px-6 py-2 rounded-lg font-semibold
-                       transition-all"
-          >
-            🚪 Salir
-          </button>
+
+          <div className="flex-1 flex items-center justify-center">
+            <User size={120} className="text-gray-400" />
+          </div>
+
+          <div className="flex items-center gap-8 pb-2">
+            <button className="p-3 bg-gray-200 rounded-full hover:bg-gray-300 transition">
+              <MicOff size={28} className="text-black" />
+            </button>
+
+            <button className="p-3 bg-gray-200 rounded-full hover:bg-gray-300 transition">
+              <VideoOff size={28} className="text-black" />
+            </button>
+
+            <button
+              onClick={handleEndCall}
+              className="p-3 bg-red-500 rounded-full hover:bg-red-600 transition"
+            >
+              <PhoneOff size={28} className="text-white" />
+            </button>
+          </div>
         </div>
-      </header>
 
-      {/* Video Grid */}
-      <main className="flex-1 p-4">
-        <div className="container mx-auto h-full">
-          {/* 
-            AQUÍ VA TU LÓGICA DE WEBRTC/VIDEOLLAMADA 
-            Por ejemplo, con simple-peer, PeerJS, o tu implementación actual
-          */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 h-full">
-            {/* Video placeholder */}
-            <div className="bg-gray-800 rounded-lg flex items-center justify-center aspect-video">
-              <div className="text-center text-white">
-                <div className="text-6xl mb-4">🎥</div>
-                <p className="text-lg">Tu video</p>
-              </div>
-            </div>
+        {/* Panel de chat */}
+        <div
+          className="w-full max-w-xs bg-white rounded-2xl shadow-md border border-gray-200 p-4 flex flex-col"
+          style={{ height: "390px" }}
+        >
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="font-semibold text-gray-700">Chat en vivo</h3>
+          </div>
 
-            {/* More video placeholders based on participant count */}
-            {meeting && Array.from({ length: (meeting.participantCount || 1) - 1 }).map((_, i) => (
-              <div key={i} className="bg-gray-800 rounded-lg flex items-center justify-center aspect-video">
-                <div className="text-center text-white">
-                  <div className="text-6xl mb-4">👤</div>
-                  <p className="text-lg">Participante {i + 1}</p>
+          <div className="flex-1 border rounded-lg bg-gray-50 p-3 overflow-y-auto">
+            {messages.length === 0 ? (
+              <p className="text-gray-400 text-sm text-center mt-4">
+                No hay mensajes aún
+              </p>
+            ) : (
+              messages.map((msg, index) => (
+                <div
+                  key={index}
+                  className={`mb-2 p-2 rounded-lg ${
+                    msg.senderId === currentUser?.id
+                      ? "bg-blue-100 text-right ml-4"
+                      : "bg-gray-200 text-left mr-4"
+                  }`}
+                >
+                  <p className="text-xs text-gray-600 mb-1">
+                    {msg.senderId === currentUser?.id
+                      ? "Tú"
+                      : msg.senderName || msg.senderId.substring(0, 8)}
+                  </p>
+                  <p className="text-sm break-words">{msg.text}</p>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          <div className="mt-3 flex items-center gap-2">
+            <input
+              type="text"
+              placeholder="Envia un mensaje"
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyPress={handleKeyPress}
+              disabled={!connected}
+              className="flex-1 border px-3 py-2 rounded-lg focus:outline-none disabled:opacity-50"
+            />
+            <button
+              onClick={handleSendMessage}
+              disabled={!connected || !newMessage.trim()}
+              className="px-3 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              ➤
+            </button>
           </div>
         </div>
       </main>
 
-      {/* Controls */}
-      <footer className="bg-gray-800 p-4">
-        <div className="container mx-auto flex justify-center gap-4">
-          <button className="bg-blue-600 hover:bg-blue-700 p-4 rounded-full">
-            🎤
-          </button>
-          <button className="bg-blue-600 hover:bg-blue-700 p-4 rounded-full">
-            📹
-          </button>
-          <button className="bg-blue-600 hover:bg-blue-700 p-4 rounded-full">
-            🖥️
-          </button>
-          <button 
-            onClick={onLeaveMeeting}
-            className="bg-red-600 hover:bg-red-700 p-4 rounded-full"
-          >
-            📞
-          </button>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
-};
-
-export default VideoCall;
+}
