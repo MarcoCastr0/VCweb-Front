@@ -94,10 +94,7 @@ export class MeetingService {
       return {
         success: true,
         meeting: data.meeting,
-        maxParticipants:
-          data.maxParticipants ||
-          data.meeting?.maxParticipants ||
-          10,
+        maxParticipants: data.maxParticipants || data.meeting?.maxParticipants || 10,
       };
     } catch (error: any) {
       return {
@@ -128,7 +125,7 @@ export class MeetingService {
 
       return {
         success: true,
-        meetings: data.meetings,
+        meetings: data.meetings || [],
       };
     } catch (error: any) {
       return {
