@@ -17,22 +17,23 @@ export interface Meeting {
   updatedAt?: string;
 }
 
+interface ApiResponse {
+  success: boolean;
+  message?: string;
+  meetingId?: string;
+  meeting?: Meeting;
+  meetings?: Meeting[];
+  maxParticipants?: number;
+}
+
 export class MeetingService {
   /**
    * Creates a new meeting room.
-   *
-   * @param {string} hostId - ID of the user creating the meeting.
-   * @param {number} maxParticipants - Optional max participants (default 10).
-   * @returns {Promise<{success: boolean; meetingId: string; message?: string}>}
    */
   static async createMeeting(
     hostId: string,
     maxParticipants?: number
-  ): Promise<{
-    success: boolean;
-    meetingId: string;
-    message?: string;
-  }> {
+  ): Promise<{ success: boolean; meetingId: string; message?: string }> {
     try {
       const body: any = { hostId };
       if (maxParticipants) body.maxParticipants = maxParticipants;
@@ -43,7 +44,7 @@ export class MeetingService {
         body: JSON.stringify(body),
       });
 
-      const data = await response.json();
+      const data = (await response.json()) as ApiResponse;
 
       if (!response.ok || !data.success) {
         return {
@@ -55,7 +56,7 @@ export class MeetingService {
 
       return {
         success: true,
-        meetingId: data.meetingId,
+        meetingId: data.meetingId || "",
       };
     } catch (error: any) {
       return {
@@ -68,9 +69,6 @@ export class MeetingService {
 
   /**
    * Validates if a meeting code exists and is active.
-   *
-   * @param {string} meetingId - Meeting code.
-   * @returns {Promise<{success: boolean; meeting?: Meeting; maxParticipants?: number; message?: string}>}
    */
   static async validateMeeting(meetingId: string): Promise<{
     success: boolean;
@@ -84,7 +82,7 @@ export class MeetingService {
         headers: { "Content-Type": "application/json" },
       });
 
-      const data = await response.json();
+      const data = (await response.json()) as ApiResponse;
 
       if (!response.ok || !data.success) {
         return {
@@ -95,8 +93,11 @@ export class MeetingService {
 
       return {
         success: true,
-        meeting: data.meeting as Meeting,
-        maxParticipants: data.maxParticipants || data.meeting?.maxParticipants || 10,
+        meeting: data.meeting,
+        maxParticipants:
+          data.maxParticipants ||
+          data.meeting?.maxParticipants ||
+          10,
       };
     } catch (error: any) {
       return {
@@ -108,9 +109,6 @@ export class MeetingService {
 
   /**
    * Gets all meetings created by a user.
-   *
-   * @param {string} userId - User identifier (hostId).
-   * @returns {Promise<{success: boolean; meetings?: Meeting[]; message?: string}>}
    */
   static async getUserMeetings(userId: string): Promise<{
     success: boolean;
@@ -119,7 +117,7 @@ export class MeetingService {
   }> {
     try {
       const response = await fetch(`${API_URL}/api/meetings/user/${userId}`);
-      const data = await response.json();
+      const data = (await response.json()) as ApiResponse;
 
       if (!response.ok || !data.success) {
         return {
@@ -130,7 +128,7 @@ export class MeetingService {
 
       return {
         success: true,
-        meetings: data.meetings as Meeting[],
+        meetings: data.meetings,
       };
     } catch (error: any) {
       return {
@@ -142,9 +140,6 @@ export class MeetingService {
 
   /**
    * Closes a meeting by meetingId.
-   *
-   * @param {string} meetingId - Meeting code.
-   * @returns {Promise<{success: boolean; message?: string}>}
    */
   static async closeMeeting(meetingId: string): Promise<{
     success: boolean;
@@ -155,7 +150,7 @@ export class MeetingService {
         method: "DELETE",
       });
 
-      const data = await response.json();
+      const data = (await response.json()) as ApiResponse;
 
       if (!response.ok || !data.success) {
         return {
