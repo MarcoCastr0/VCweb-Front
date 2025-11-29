@@ -4,21 +4,19 @@
  * token validation, registration, and local storage session handling.
  */
 
-import { 
-  auth, 
-  googleProvider, 
-  facebookProvider, 
+import {
+  auth,
+  googleProvider,
   githubProvider,
   signInWithPopup,
   signInWithEmailAndPassword,
-  createUserWithEmailAndPassword 
-} from './FirebaseClient';
-import type { User, AuthResponse } from './User';
+  createUserWithEmailAndPassword,
+} from "./FirebaseClient";
+import type { User, AuthResponse } from "./User";
 
-const API_URL = (import.meta as any).env.VITE_API_URL || 'https://vcweb-back1.onrender.com';
+const API_URL = (import.meta as any).env.VITE_API_URL || "https://vcweb-back1.onrender.com";
 
 export class AuthService {
-
   /**
    * Validates an ID token with the backend API.
    * @param {string} idToken - Firebase ID token.
@@ -27,14 +25,16 @@ export class AuthService {
    */
   static async validateIdToken(idToken: string): Promise<AuthResponse> {
     const response = await fetch(`${API_URL}/auth/validate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ idToken }),
     });
 
     if (!response.ok) {
-      const errorData = (await response.json().catch(() => ({ error: 'Error de autenticación' }))) as { error: string };
-      throw new Error(errorData.error || 'Error de autenticación');
+      const errorData = (await response
+        .json()
+        .catch(() => ({ error: "Error de autenticación" }))) as { error: string };
+      throw new Error(errorData.error || "Error de autenticación");
     }
 
     return (await response.json()) as AuthResponse;
@@ -54,13 +54,13 @@ export class AuthService {
 
       const result = await this.validateIdToken(idToken);
       if (!result.success) {
-        throw new Error(result.message || 'Error en la autenticación');
+        throw new Error(result.message || "Error en la autenticación");
       }
 
+      this.saveUserToStorage(result.user as User);
       return result;
-
     } catch (error: any) {
-      throw new Error(this.getAuthErrorMessage(error.code) || 'Error al iniciar sesión');
+      throw new Error(this.getAuthErrorMessage(error.code) || "Error al iniciar sesión");
     }
   }
 
@@ -83,7 +83,11 @@ export class AuthService {
     age: string;
   }): Promise<AuthResponse> {
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, userData.email, userData.password);
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        userData.email,
+        userData.password
+      );
       const firebaseUser = userCredential.user;
 
       const fullName = `${userData.name} ${userData.lastName}`.trim();
@@ -91,18 +95,20 @@ export class AuthService {
         id: firebaseUser.uid,
         name: fullName,
         email: userData.email,
-        provider: 'manual' as const,
+        provider: "manual" as const,
       };
 
       const createResponse = await fetch(`${API_URL}/users`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(userPayload),
       });
 
       if (!createResponse.ok) {
-        const errorData = (await createResponse.json().catch(() => ({ error: 'Error creando usuario' }))) as { error: string };
-        throw new Error(errorData.error || 'Error creando usuario en el backend');
+        const errorData = (await createResponse
+          .json()
+          .catch(() => ({ error: "Error creando usuario" }))) as { error: string };
+        throw new Error(errorData.error || "Error creando usuario en el backend");
       }
 
       const backendUser = (await createResponse.json()) as User;
@@ -110,8 +116,8 @@ export class AuthService {
       if (userData.age) {
         try {
           const updateResponse = await fetch(`${API_URL}/users/${firebaseUser.uid}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ age: userData.age }),
           });
 
@@ -119,36 +125,41 @@ export class AuthService {
             const updatedUser = (await updateResponse.json()) as User;
             backendUser.age = updatedUser.age;
           }
-        } catch {}
+        } catch {
+          // ignore age update error
+        }
       }
 
-      return {
+      const result: AuthResponse = {
         success: true,
-        message: 'Registro exitoso',
+        message: "Registro exitoso",
         user: backendUser,
       };
 
+      this.saveUserToStorage(backendUser);
+      return result;
     } catch (error: any) {
-      throw new Error(this.getAuthErrorMessage(error.code) || 'Error al registrar usuario');
+      throw new Error(this.getAuthErrorMessage(error.code) || "Error al registrar usuario");
     }
   }
 
   /**
-   * Authenticates a user using a social provider (Google, Facebook, GitHub).
-   * @param {'google' | 'facebook' | 'github'} provider - Social provider name.
+   * Authenticates a user using a social provider (Google, GitHub).
+   * @param {'google' | 'github'} provider - Social provider name.
    * @returns {Promise<AuthResponse>} Backend authentication response.
    * @throws {Error} If login or backend validation fails.
    */
-  static async loginWithProvider(provider: 'google' | 'facebook' | 'github'): Promise<AuthResponse> {
+  static async loginWithProvider(
+    provider: "google" | "github"
+  ): Promise<AuthResponse> {
     try {
       const providerMap = {
         google: googleProvider,
-        facebook: facebookProvider,
         github: githubProvider,
       };
 
       const authProvider = providerMap[provider];
-      if (!authProvider) throw new Error('Proveedor no soportado');
+      if (!authProvider) throw new Error("Proveedor no soportado");
 
       const userCredential = await signInWithPopup(auth, authProvider);
       const idToken = await userCredential.user.getIdToken();
@@ -158,10 +169,19 @@ export class AuthService {
         throw new Error(result.message || `Error con ${provider}`);
       }
 
+      this.saveUserToStorage(result.user as User);
       return result;
-
     } catch (error: any) {
-      throw new Error(this.getAuthErrorMessage(error.code) || `Error al iniciar sesión con ${provider}`);
+      // Manejo especial para cuenta existente con otro proveedor
+      if (error?.code === "auth/account-exists-with-different-credential") {
+        throw new Error(
+          "Ya existe una cuenta con este correo usando otro método de acceso (por ejemplo Google). Inicia sesión con ese proveedor."
+        );
+      }
+
+      throw new Error(
+        this.getAuthErrorMessage(error.code) || `Error al iniciar sesión con ${provider}`
+      );
     }
   }
 
@@ -173,15 +193,19 @@ export class AuthService {
    */
   private static getAuthErrorMessage(code: string): string {
     const messages: Record<string, string> = {
-      'auth/invalid-email': 'El correo es inválido',
-      'auth/user-disabled': 'Esta cuenta fue deshabilitada',
-      'auth/user-not-found': 'Usuario no encontrado',
-      'auth/wrong-password': 'Contraseña incorrecta',
-      'auth/email-already-in-use': 'Este correo ya está registrado',
-      'auth/weak-password': 'Contraseña muy débil',
+      "auth/invalid-email": "El correo es inválido",
+      "auth/user-disabled": "Esta cuenta fue deshabilitada",
+      "auth/user-not-found": "Usuario no encontrado",
+      "auth/wrong-password": "Contraseña incorrecta",
+      "auth/email-already-in-use": "Este correo ya está registrado",
+      "auth/weak-password": "Contraseña muy débil",
+      "auth/popup-closed-by-user": "Ventana de autenticación cerrada",
+      "auth/cancelled-popup-request": "Solicitud cancelada",
+      "auth/account-exists-with-different-credential":
+        "Ya existe una cuenta con este correo usando otro método de acceso. Inicia sesión con el proveedor con el que te registraste inicialmente.",
     };
 
-    return messages[code] || 'Error de autenticación';
+    return messages[code] || "Error de autenticación";
   }
 
   /**
@@ -190,8 +214,8 @@ export class AuthService {
    * @returns {void}
    */
   static saveUserToStorage(user: User): void {
-    localStorage.setItem('currentUser', JSON.stringify(user));
-    localStorage.setItem('isAuthenticated', 'true');
+    localStorage.setItem("currentUser", JSON.stringify(user));
+    localStorage.setItem("isAuthenticated", "true");
   }
 
   /**
@@ -199,7 +223,7 @@ export class AuthService {
    * @returns {User | null} Parsed user object or null.
    */
   static getCurrentUser(): User | null {
-    const data = localStorage.getItem('currentUser');
+    const data = localStorage.getItem("currentUser");
     return data ? (JSON.parse(data) as User) : null;
   }
 
@@ -208,7 +232,7 @@ export class AuthService {
    * @returns {boolean} True if authenticated.
    */
   static isAuthenticated(): boolean {
-    return localStorage.getItem('isAuthenticated') === 'true';
+    return localStorage.getItem("isAuthenticated") === "true";
   }
 
   /**
@@ -219,8 +243,8 @@ export class AuthService {
     try {
       await auth.signOut();
     } finally {
-      localStorage.removeItem('currentUser');
-      localStorage.removeItem('isAuthenticated');
+      localStorage.removeItem("currentUser");
+      localStorage.removeItem("isAuthenticated");
     }
   }
 }
