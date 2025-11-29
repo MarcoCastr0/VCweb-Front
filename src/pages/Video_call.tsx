@@ -14,18 +14,6 @@ interface Message {
   timestamp: string;
 }
 
-/* ------------------ 🔥 FUNCIÓN PARA LLAMAR BACKEND AL SALIR ------------------ */
-async function leaveMeetingBackend(meetingId: string) {
-  try {
-    await fetch(`${import.meta.env.VITE_API_URL}/meetings/${meetingId}/leave`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-    });
-  } catch (err) {
-    console.error("Error leaving meeting:", err);
-  }
-}
-
 export default function VideoCall() {
   const [searchParams] = useSearchParams();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -33,9 +21,8 @@ export default function VideoCall() {
   const [connected, setConnected] = useState(false);
   const [loadingMeeting, setLoadingMeeting] = useState(true);
   const [meetingError, setMeetingError] = useState("");
-
-  const [participants, setParticipants] = useState(1);
-
+  const [participantCount, setParticipantCount] = useState(0);
+  const [maxParticipants, setMaxParticipants] = useState(10);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const initialized = useRef(false);
@@ -43,14 +30,10 @@ export default function VideoCall() {
   const roomId = searchParams.get("room");
   const currentUser = AuthService.getCurrentUser();
 
-  const [callDuration, setCallDuration] = useState(0);
-  const durationRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  /* ------------------ 🔥 EFECTO PRINCIPAL ------------------ */
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
@@ -61,30 +44,51 @@ export default function VideoCall() {
         return;
       }
 
+      // 1) Validar reunión en Backend 1
       setLoadingMeeting(true);
       setMeetingError("");
-
-      // Validar reunión
       const result = await MeetingService.validateMeeting(roomId);
+
       if (!result.success) {
         setMeetingError(result.message || "Reunión no válida");
         navigate("/start-meeting");
         return;
       }
 
+      if (!result.meeting?.isActive) {
+        setMeetingError("Esta reunión ya no está activa");
+        navigate("/start-meeting");
+        return;
+      }
+
+      setMaxParticipants(result.maxParticipants || 10);
       setLoadingMeeting(false);
 
-      // Conectar WebSocket
+      // 2) Conectar WebSocket con Backend 2
       WebSocketService.connect(currentUser.id);
 
-      WebSocketService.onMessage((data: any) => {
+      WebSocketService.onMessage((data) => {
         switch (data.action) {
           case "joined":
+            console.log("✅ Unido a la sala:", data.payload);
             setConnected(true);
+            setParticipantCount(data.payload.participantCount || 0);
+            setMaxParticipants(data.payload.maxParticipants || 10);
             break;
 
-          case "room-count":
-            setParticipants(data.count);
+          case "join-error":
+            console.error("❌ Error al unirse:", data.payload);
+            handleJoinError(data.payload);
+            break;
+
+          case "user-joined":
+            console.log("👤 Nuevo usuario:", data.payload);
+            setParticipantCount(data.payload.participantCount || 0);
+            break;
+
+          case "user-left":
+            console.log("👋 Usuario salió:", data.payload);
+            setParticipantCount(data.payload.participantCount || 0);
             break;
 
           case "recent-messages":
@@ -114,11 +118,9 @@ export default function VideoCall() {
         }
       });
 
-      // Entrar a la sala
       const checkAndJoin = () => {
         if (WebSocketService.isConnected()) {
-          WebSocketService.joinRoom(roomId);
-          setConnected(true);
+          WebSocketService.joinRoom(roomId, currentUser.id);
         } else {
           setTimeout(checkAndJoin, 150);
         }
@@ -130,44 +132,41 @@ export default function VideoCall() {
     init();
 
     return () => {
+      console.log("🧹 Cleanup VideoCall: leaving room & disconnecting WS");
       WebSocketService.leaveRoom();
       WebSocketService.disconnect();
       initialized.current = false;
     };
   }, []);
 
-  /* ------------------ 🔥 CONTADOR DE DURACIÓN ------------------ */
-  useEffect(() => {
-    if (connected) {
-      durationRef.current = setInterval(() => {
-        setCallDuration((prev) => prev + 1);
-      }, 1000);
-    }
-
-    return () => {
-      if (durationRef.current) clearInterval(durationRef.current);
-    };
-  }, [connected]);
-
-  /* ------------------ 🔥 SCROLL CHAT ------------------ */
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  /* ------------------ 🔥 DETECTAR CIERRE DE PESTAÑA ------------------ */
-  useEffect(() => {
-    const onUnload = () => {
-      if (roomId) leaveMeetingBackend(roomId);
-    };
+  const handleJoinError = (payload: any) => {
+    let errorMessage = "Error al unirse a la reunión";
 
-    window.addEventListener("beforeunload", onUnload);
+    switch (payload.code) {
+      case "MEETING_NOT_FOUND":
+        errorMessage = "La reunión no existe";
+        break;
+      case "MEETING_INACTIVE":
+        errorMessage = "Esta reunión ya no está activa";
+        break;
+      case "MEETING_FULL":
+        errorMessage = `La reunión está llena (${payload.max}/${payload.max} participantes)`;
+        break;
+      case "ROOMID_REQUIRED":
+        errorMessage = "Error: falta el ID de la reunión";
+        break;
+      default:
+        errorMessage = payload.message || "Error desconocido";
+    }
 
-    return () => {
-      window.removeEventListener("beforeunload", onUnload);
-    };
-  }, [roomId]);
+    setMeetingError(errorMessage);
+    setTimeout(() => navigate("/start-meeting"), 2000);
+  };
 
-  /* ------------------ 🔥 ENVIAR MENSAJE ------------------ */
   const handleSendMessage = () => {
     if (!newMessage.trim() || !connected) return;
     WebSocketService.sendMessage(newMessage, currentUser?.name);
@@ -181,21 +180,12 @@ export default function VideoCall() {
     }
   };
 
-  /* ------------------ 🔥 FINALIZAR LLAMADA ------------------ */
-  const handleEndCall = async () => {
-    if (durationRef.current) clearInterval(durationRef.current);
-
-    // 🔥 Notificar al backend que salí
-    await leaveMeetingBackend(roomId!);
-
+  const handleEndCall = () => {
     WebSocketService.leaveRoom();
     WebSocketService.disconnect();
     initialized.current = false;
-
     navigate("/start-meeting");
   };
-
-  /* ------------------ 🔥 UI ------------------ */
 
   if (loadingMeeting) {
     return (
@@ -226,19 +216,19 @@ export default function VideoCall() {
       <Header title="Llamada en vivo" showMenu={true} />
 
       <main className="flex-1 flex flex-col lg:flex-row items-start justify-center gap-10 px-6 py-10">
-
-        {/* PANEL VIDEO */}
+        {/* Área de video */}
         <div
           className="w-full max-w-3xl bg-white rounded-2xl shadow-md border border-gray-200 p-6 flex flex-col items-center justify-between"
           style={{ height: "390px" }}
         >
           <div className="w-full flex justify-between items-center mb-2">
-
             <span className="text-sm text-gray-600">
               Room: <strong>{roomId}</strong>
             </span>
-
-            <div className="text-right">
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-600">
+                Participantes: <strong>{participantCount}/{maxParticipants}</strong>
+              </span>
               <span
                 className={`text-sm font-semibold ${
                   connected ? "text-green-600" : "text-red-600"
@@ -246,16 +236,6 @@ export default function VideoCall() {
               >
                 {connected ? "🟢 Conectado" : "🔴 Desconectado"}
               </span>
-
-              {/* --- CONTADOR DE PARTICIPANTES --- */}
-              <div className="text-xs text-gray-700">
-                Conectados: {participants}{" "}
-                {participants === 1 ? "persona" : "personas"}
-              </div>
-
-              <div className="text-xs text-gray-700">
-                Tiempo: {Math.floor(callDuration / 60)}m {callDuration % 60}s
-              </div>
             </div>
           </div>
 
@@ -281,12 +261,14 @@ export default function VideoCall() {
           </div>
         </div>
 
-        {/* CHAT */}
+        {/* Panel de chat */}
         <div
           className="w-full max-w-xs bg-white rounded-2xl shadow-md border border-gray-200 p-4 flex flex-col"
           style={{ height: "390px" }}
         >
-          <h3 className="font-semibold text-gray-700 mb-2">Chat en vivo</h3>
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="font-semibold text-gray-700">Chat en vivo</h3>
+          </div>
 
           <div className="flex-1 border rounded-lg bg-gray-50 p-3 overflow-y-auto">
             {messages.length === 0 ? (
@@ -294,9 +276,9 @@ export default function VideoCall() {
                 No hay mensajes aún
               </p>
             ) : (
-              messages.map((msg, idx) => (
+              messages.map((msg, index) => (
                 <div
-                  key={idx}
+                  key={index}
                   className={`mb-2 p-2 rounded-lg ${
                     msg.senderId === currentUser?.id
                       ? "bg-blue-100 text-right ml-4"
@@ -308,7 +290,7 @@ export default function VideoCall() {
                       ? "Tú"
                       : msg.senderName || msg.senderId.substring(0, 8)}
                   </p>
-                  <p className="text-sm">{msg.text}</p>
+                  <p className="text-sm break-words">{msg.text}</p>
                 </div>
               ))
             )}
@@ -323,13 +305,12 @@ export default function VideoCall() {
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyPress={handleKeyPress}
               disabled={!connected}
-              className="flex-1 border px-3 py-2 rounded-lg"
+              className="flex-1 border px-3 py-2 rounded-lg focus:outline-none disabled:opacity-50"
             />
-
             <button
               onClick={handleSendMessage}
               disabled={!connected || !newMessage.trim()}
-              className="px-3 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50"
+              className="px-3 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               ➤
             </button>

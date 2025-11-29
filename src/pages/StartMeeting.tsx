@@ -16,7 +16,7 @@ const StartMeeting = () => {
   const navigate = useNavigate();
 
   /**
-   * Creates a new meeting in Backend with participant limit and redirects to video-call.
+   * Creates a new meeting in Backend 1 with participant limit and redirects to video-call.
    */
   const handleNewMeeting = async () => {
     setLoading(true);
@@ -37,6 +37,7 @@ const StartMeeting = () => {
         return;
       }
 
+      // Redirect to video call page
       navigate(`/video-call?room=${result.meetingId}`);
     } catch (err: any) {
       setError(err.message || "Error inesperado al crear reunión");
@@ -46,7 +47,7 @@ const StartMeeting = () => {
   };
 
   /**
-   * Validates meeting code and checks if user can join.
+   * Validates meeting code with Backend 1.
    */
   const handleCheckMeeting = async () => {
     if (!meetingCode.trim()) {
@@ -60,15 +61,20 @@ const StartMeeting = () => {
 
     try {
       const code = meetingCode.toUpperCase().trim();
+      const result = await MeetingService.validateMeeting(code);
 
-      const canJoinResult = await MeetingService.canJoinMeeting(code);
-
-      if (!canJoinResult.success || !canJoinResult.canJoin) {
-        setError(canJoinResult.message || "No puedes unirte a esta reunión");
+      if (!result.success) {
+        setError(result.message || "Reunión no encontrada");
         return;
       }
 
-      setMeetingInfo(canJoinResult.meeting || null);
+      if (!result.meeting?.isActive) {
+        setError("Esta reunión ya no está activa");
+        return;
+      }
+
+      // Show meeting info
+      setMeetingInfo(result.meeting);
     } catch (err: any) {
       setError(err.message || "Error al verificar reunión");
     } finally {
@@ -78,36 +84,22 @@ const StartMeeting = () => {
 
   /**
    * Join the validated meeting.
+   * Backend 2 will validate capacity in real-time via WebSocket.
    */
-  const handleJoinMeeting = async () => {
+  const handleJoinMeeting = () => {
     if (!meetingCode.trim()) return;
 
-    setLoading(true);
-    setError("");
-
-    try {
-      const user = AuthService.getCurrentUser();
-      if (!user) {
-        setError("Debes iniciar sesión primero");
-        navigate("/login");
-        return;
-      }
-
-      const code = meetingCode.toUpperCase().trim();
-
-      const result = await MeetingService.joinMeeting(code, user.id);
-
-      if (!result.success) {
-        setError(result.message || "No se pudo unir a la reunión");
-        return;
-      }
-
-      navigate(`/video-call?room=${code}`);
-    } catch (err: any) {
-      setError(err.message || "Error inesperado al unirse");
-    } finally {
-      setLoading(false);
+    const user = AuthService.getCurrentUser();
+    if (!user) {
+      setError("Debes iniciar sesión primero");
+      navigate("/login");
+      return;
     }
+
+    const code = meetingCode.toUpperCase().trim();
+    
+    // Navigate to video call - Backend 2 will handle capacity validation
+    navigate(`/video-call?room=${code}`);
   };
 
   return (
@@ -150,6 +142,7 @@ const StartMeeting = () => {
                 onChange={(e) => {
                   setMeetingCode(e.target.value.toUpperCase());
                   setMeetingInfo(null);
+                  setError("");
                 }}
                 maxLength={6}
                 disabled={loading}
@@ -175,23 +168,26 @@ const StartMeeting = () => {
                   ✅ Reunión encontrada
                 </h4>
                 <div className="text-sm text-green-700 space-y-1">
-                  <p>📋 Código: <strong>{meetingInfo.meetingId}</strong></p>
-                  <p>👥 Participantes: {MeetingService.getMeetingStats(meetingInfo)}</p>
                   <p>
-                    {MeetingService.isMeetingFull(meetingInfo)
-                      ? "⚠️ Reunión llena"
-                      : "✅ Espacio disponible"}
+                    📋 Código: <strong>{meetingInfo.meetingId}</strong>
                   </p>
+                  <p>
+                    👥 Límite: {meetingInfo.maxParticipants || 10} participantes
+                  </p>
+                  <p>✅ Reunión activa</p>
                 </div>
                 <button
                   onClick={handleJoinMeeting}
-                  disabled={loading || MeetingService.isMeetingFull(meetingInfo)}
+                  disabled={loading}
                   className="mt-3 w-full bg-green-600 text-white font-semibold py-2 rounded-lg
                              hover:bg-green-700 transition-all
                              disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loading ? "Uniéndose..." : "Unirse Ahora"}
+                  Unirse Ahora
                 </button>
+                <p className="text-xs text-green-600 mt-2 text-center">
+                  La capacidad se validará en tiempo real al entrar
+                </p>
               </div>
             )}
           </div>
