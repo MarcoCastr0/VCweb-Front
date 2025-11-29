@@ -1,69 +1,86 @@
 /**
  * Home page component that serves as the landing page for VCweb.
- * It displays navigation links, branding elements, a welcome message,
- * and main promotional visuals.
- *
- * @component
- * @returns {JSX.Element} The rendered Home page.
+ * Accessible version — improved contrast, focus visibility and semantic roles
  */
 
 import { Link } from "react-router-dom";
 
 const Home = () => {
   return (
-    <div className="min-h-screen bg-[#0aa6df] flex flex-col">
-      <header className="flex justify-between items-center px-4 py-4 md:px-8 md:py-6">
+    <div className="min-h-screen bg-[#0066A1] flex flex-col">
+      {/* Header */}
+      <header
+        className="flex justify-between items-center px-4 py-4 md:px-8 md:py-6"
+        role="banner"
+      >
         <div className="flex items-center gap-3">
           <div className="w-14 h-14 md:w-20 md:h-20 bg-white rounded-full flex items-center justify-center shadow-lg">
             <img
               src="/Logo.jpg"
-              alt="VCweb Logo"
+              alt="Logotipo de VCweb"
               className="w-10 h-10 md:w-14 md:h-14"
             />
           </div>
         </div>
 
-        <nav className="flex items-center gap-3 md:gap-6">
+        <nav
+          className="flex items-center gap-3 md:gap-6"
+          aria-label="Navegación principal"
+        >
           <Link
             to="/about"
-            className="text-white font-semibold text-sm md:text-lg hover:opacity-80 transition"
+            className="text-white font-semibold text-sm md:text-lg hover:underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-white px-2 py-1 rounded-md"
           >
             Sobre nosotros
           </Link>
 
           <Link
             to="/login"
-            className="bg-white text-[#00bfff] px-3 py-1.5 md:px-5 md:py-2 rounded-lg font-semibold text-sm md:text-base hover:shadow-lg transition"
+            aria-label="Ir a la página de inicio de sesión"
+            className="btn"
           >
             Iniciar sesión
           </Link>
         </nav>
       </header>
 
-      <main className="flex-1 flex flex-col items-center justify-center text-center px-8 space-y-6 relative">
-        <h1 className="text-white text-5xl font-bold">Bienvenido a VCweb</h1>
+      {/* Main Content */}
+      <main
+        className="flex-1 flex flex-col items-center justify-center text-center px-8 space-y-6 relative"
+        role="main"
+      >
+        <h1 className="text-white text-4xl md:text-5xl font-bold leading-tight">
+          Bienvenido a VCweb
+        </h1>
 
-        <p className="text-white text-xl font-light max-w-xl">
-          Conecta , crea y gestiona tus
-          <br />
-          proyectos digitales.
+        <p className="text-white text-lg md:text-xl font-light max-w-xl leading-relaxed">
+          Conecta, crea y gestiona tus proyectos digitales.
         </p>
 
+        {/* Imagen decorativa: role="presentation" */}
         <img
           src="/rueda.png"
-          alt="Rueda pequeña"
-          className="w-50 h-50 opacity-90 absolute left-[30%] top-[25%]"
+          alt=""
+          role="presentation"
+          className="w-44 h-44 opacity-40 absolute left-[10%] top-[20%] pointer-events-none select-none"
         />
 
         <img
           src="/login.png"
-          alt="Imagen Home"
-          className="w-[420px] h-auto drop-shadow-xl mt-0 mx-auto"
+          alt="Ilustración de personas colaborando digitalmente"
+          className="w-[380px] md:w-[420px] h-auto drop-shadow-xl mt-0 mx-auto"
         />
       </main>
 
-      <footer className="text-center text-white py-8 space-y-2">
-        <Link to="/Sitemap" className="hover:underline font-semibold text-lg">
+      {/* Footer */}
+      <footer
+        className="text-center text-white py-8 space-y-2"
+        role="contentinfo"
+      >
+        <Link
+          to="/Sitemap"
+          className="hover:underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-white px-2 rounded-md font-semibold text-lg"
+        >
           Mapa del sitio
         </Link>
 
