@@ -64,7 +64,7 @@ const Home = () => {
           src="/rueda.png"
           alt=""
           role="presentation"
-          className="w-44 h-44 opacity-40 absolute left-[10%] top-[40%] pointer-events-none select-none"
+          className="w-44 h-44 opacity-80 absolute left-[60%] top-[40%] pointer-events-none select-none"
         />
 
         <img
