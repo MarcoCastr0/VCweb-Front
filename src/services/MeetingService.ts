@@ -29,19 +29,11 @@ interface ApiResponse {
 export class MeetingService {
   /**
    * Creates a new meeting room.
-   *
-   * @param {string} hostId - ID of the user creating the meeting.
-   * @param {number} maxParticipants - Optional max participants (default 10).
-   * @returns {Promise<{success: boolean; meetingId: string; message?: string}>}
    */
   static async createMeeting(
     hostId: string,
     maxParticipants?: number
-  ): Promise<{
-    success: boolean;
-    meetingId: string;
-    message?: string;
-  }> {
+  ): Promise<{ success: boolean; meetingId: string; message?: string }> {
     try {
       const body: any = { hostId };
       if (maxParticipants) body.maxParticipants = maxParticipants;
@@ -77,9 +69,6 @@ export class MeetingService {
 
   /**
    * Validates if a meeting code exists and is active.
-   *
-   * @param {string} meetingId - Meeting code.
-   * @returns {Promise<{success: boolean; meeting?: Meeting; maxParticipants?: number; message?: string}>}
    */
   static async validateMeeting(meetingId: string): Promise<{
     success: boolean;
@@ -117,9 +106,6 @@ export class MeetingService {
 
   /**
    * Gets all meetings created by a user.
-   *
-   * @param {string} userId - User identifier (hostId).
-   * @returns {Promise<{success: boolean; meetings?: Meeting[]; message?: string}>}
    */
   static async getUserMeetings(userId: string): Promise<{
     success: boolean;
@@ -151,9 +137,6 @@ export class MeetingService {
 
   /**
    * Closes a meeting by meetingId.
-   *
-   * @param {string} meetingId - Meeting code.
-   * @returns {Promise<{success: boolean; message?: string}>}
    */
   static async closeMeeting(meetingId: string): Promise<{
     success: boolean;
