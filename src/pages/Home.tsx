@@ -31,7 +31,7 @@ const Home = () => {
             to="/about"
             className="home-link font-semibold text-sm md:text-lg
              drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]
-             focus-visible:outline focus-visible:outline-2 focus-visible:outline-white
+             focus-visible:outline focus-visible:outline-white
              rounded-md px-1 transition"
           >
             Sobre nosotros
@@ -64,7 +64,7 @@ const Home = () => {
           src="/rueda.png"
           alt=""
           role="presentation"
-          className="w-44 h-44 opacity-80 absolute left-[60%] top-[40%] pointer-events-none select-none"
+          className="w-44 h-44 opacity-80 absolute left-[40%] top-[80%] pointer-events-none select-none"
         />
 
         <img
