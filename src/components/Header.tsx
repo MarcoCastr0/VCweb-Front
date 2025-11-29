@@ -40,7 +40,7 @@ const Header = ({ title, showMenu = false }: HeaderProps) => {
     <>
       <header
         className="
-          bg-gradient-to-r from-[#00bfff] to-[#0096d6]
+          bg-gradient-to-r from-[#005f8c] to-[#0077b6]
           px-4 py-3
           sm:px-6 sm:py-4
           flex items-center justify-between
@@ -65,7 +65,7 @@ const Header = ({ title, showMenu = false }: HeaderProps) => {
           </div>
         </Link>
 
-        <h1 className="text-white text-lg sm:text-2xl font-semibold">
+        <h1 className="text-white text-lg sm:text-2xl font-bold">
           {title}
         </h1>
 
@@ -73,7 +73,7 @@ const Header = ({ title, showMenu = false }: HeaderProps) => {
           <button
             ref={buttonRef}
             onClick={() => setOpenMenu(true)}
-            className="text-white"
+            className="text-white hover:text-gray-200 focus:outline-none focus:ring-2 focus:ring-white rounded-md"
           >
             <svg
               className="w-6 h-6 sm:w-8 sm:h-8"
@@ -97,26 +97,27 @@ const Header = ({ title, showMenu = false }: HeaderProps) => {
       <div
         ref={menuRef}
         className={`
-          fixed top-0 right-0 h-full w-64 bg-[#edf5fc] shadow-xl
+          fixed top-0 right-0 h-full w-64 bg-[#f7fbff] shadow-xl
           transform transition-transform duration-300 z-50
           ${openMenu ? "translate-x-0" : "translate-x-full"}
         `}
       >
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200">
-          <h2 className="text-gray-800 font-semibold text-lg">Menú</h2>
+        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-300">
+          <h2 className="text-[#003b66] font-semibold text-lg">Menú</h2>
           <button
             onClick={() => setOpenMenu(false)}
-            className="text-gray-500 text-2xl font-bold hover:text-gray-700"
+            className="text-[#003b66] text-2xl font-bold hover:text-[#0077b6] focus:outline-none focus:ring-2 focus:ring-[#0077b6] rounded-md"
+            aria-label="Cerrar menú"
           >
             ✕
           </button>
         </div>
 
-        <nav className="flex flex-col gap-6 mt-6 px-6 text-gray-800">
+        <nav className="flex flex-col gap-6 mt-6 px-6 text-[#003b66]">
           <Link
             to="/profile"
             onClick={() => setOpenMenu(false)}
-            className="flex items-center gap-3 text-md hover:text-[#0096d6]"
+            className="flex items-center gap-3 text-md hover:text-[#0077b6]"
           >
             🧑‍💼 Perfil
           </Link>
@@ -124,7 +125,7 @@ const Header = ({ title, showMenu = false }: HeaderProps) => {
           <Link
             to="/about"
             onClick={() => setOpenMenu(false)}
-            className="flex items-center gap-3 text-md hover:text-[#0096d6]"
+            className="flex items-center gap-3 text-md hover:text-[#0077b6]"
           >
             ℹ️ Sobre nosotros
           </Link>
@@ -132,7 +133,7 @@ const Header = ({ title, showMenu = false }: HeaderProps) => {
           <Link
             to="/"
             onClick={() => setOpenMenu(false)}
-            className="flex items-center gap-3 text-md text-red-500 hover:text-red-400"
+            className="flex items-center gap-3 text-md text-[#b30000] hover:text-[#e60000]"
           >
             🔒 Cerrar sesión
           </Link>
