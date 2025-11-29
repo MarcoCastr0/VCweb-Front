@@ -30,12 +30,12 @@ const Home = () => {
           <Link
             to="/about"
             className="
-            text-white font-semibold text-sm md:text-lg
-            hover:underline underline-offset-4
-            drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]
-            focus-visible:outline focus-visible:outline-2 focus-visible:outline-white
-            rounded-md px-1 transition  
-          "
+              text-white visited:text-white font-semibold text-sm md:text-lg
+              hover:underline underline-offset-4
+              drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]
+              focus-visible:outline focus-visible:outline-2 focus-visible:outline-white
+              rounded-md px-1 transition  
+            "
           >
             Sobre nosotros
           </Link>
@@ -67,7 +67,7 @@ const Home = () => {
           src="/rueda.png"
           alt=""
           role="presentation"
-          className="w-44 h-44 opacity-40 absolute left-[10%] top-[20%] pointer-events-none select-none"
+          className="w-44 h-44 opacity-40 absolute left-[10%] top-[40%] pointer-events-none select-none"
         />
 
         <img
@@ -84,7 +84,7 @@ const Home = () => {
       >
         <Link
           to="/Sitemap"
-          className="text-white hover:underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-white px-2 rounded-md font-semibold text-lg"
+          className="text-white visited:text-white hover:underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-white px-2 rounded-md font-semibold text-lg"
         >
           Mapa del sitio
         </Link>
