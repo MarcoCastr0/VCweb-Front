@@ -17,6 +17,15 @@ export interface Meeting {
   updatedAt?: string;
 }
 
+interface ApiResponse {
+  success: boolean;
+  message?: string;
+  meetingId?: string;
+  meeting?: Meeting;
+  meetings?: Meeting[];
+  maxParticipants?: number;
+}
+
 export class MeetingService {
   /**
    * Creates a new meeting room.
@@ -43,7 +52,7 @@ export class MeetingService {
         body: JSON.stringify(body),
       });
 
-      const data = await response.json();
+      const data = (await response.json()) as ApiResponse;
 
       if (!response.ok || !data.success) {
         return {
@@ -55,7 +64,7 @@ export class MeetingService {
 
       return {
         success: true,
-        meetingId: data.meetingId,
+        meetingId: data.meetingId || "",
       };
     } catch (error: any) {
       return {
@@ -84,7 +93,7 @@ export class MeetingService {
         headers: { "Content-Type": "application/json" },
       });
 
-      const data = await response.json();
+      const data = (await response.json()) as ApiResponse;
 
       if (!response.ok || !data.success) {
         return {
@@ -95,7 +104,7 @@ export class MeetingService {
 
       return {
         success: true,
-        meeting: data.meeting as Meeting,
+        meeting: data.meeting,
         maxParticipants: data.maxParticipants || data.meeting?.maxParticipants || 10,
       };
     } catch (error: any) {
@@ -119,7 +128,7 @@ export class MeetingService {
   }> {
     try {
       const response = await fetch(`${API_URL}/api/meetings/user/${userId}`);
-      const data = await response.json();
+      const data = (await response.json()) as ApiResponse;
 
       if (!response.ok || !data.success) {
         return {
@@ -130,7 +139,7 @@ export class MeetingService {
 
       return {
         success: true,
-        meetings: data.meetings as Meeting[],
+        meetings: data.meetings || [],
       };
     } catch (error: any) {
       return {
@@ -155,7 +164,7 @@ export class MeetingService {
         method: "DELETE",
       });
 
-      const data = await response.json();
+      const data = (await response.json()) as ApiResponse;
 
       if (!response.ok || !data.success) {
         return {
