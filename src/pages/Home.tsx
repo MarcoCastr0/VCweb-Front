@@ -29,7 +29,13 @@ const Home = () => {
         >
           <Link
             to="/about"
-            className="text-white font-semibold text-sm md:text-lg hover:underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white rounded-md px-1"
+            className="
+            text-white font-semibold text-sm md:text-lg
+            hover:underline underline-offset-4
+            drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]
+            focus-visible:outline focus-visible:outline-2 focus-visible:outline-white
+            rounded-md px-1 transition  
+          "
           >
             Sobre nosotros
           </Link>
@@ -78,7 +84,7 @@ const Home = () => {
       >
         <Link
           to="/Sitemap"
-          className="hover:underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-white px-2 rounded-md font-semibold text-lg"
+          className="text-white hover:underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-white px-2 rounded-md font-semibold text-lg"
         >
           Mapa del sitio
         </Link>
