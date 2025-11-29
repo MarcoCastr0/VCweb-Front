@@ -58,15 +58,7 @@ const Home = () => {
         <p className="text-white text-lg md:text-xl font-light max-w-xl leading-relaxed">
           Conecta, crea y gestiona tus proyectos digitales.
         </p>
-
-        {/* Imagen decorativa: role="presentation" */}
-        <img
-          src="/rueda.png"
-          alt=""
-          role="presentation"
-          className="w-44 h-44 opacity-80 absolute left-[40%] top-[80%] pointer-events-none select-none"
-        />
-
+        
         <img
           src="/login.png"
           alt="Ilustración de personas colaborando digitalmente"
