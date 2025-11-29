@@ -1,3 +1,8 @@
+// --- LO QUE AÑADIMOS ---
+// 1. useState para participantes
+// 2. WebSocketService escucha "room-count"
+// 3. Mostrar el número de conectados en la UI
+
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import Header from "../components/Header";
@@ -22,6 +27,8 @@ export default function VideoCall() {
   const [loadingMeeting, setLoadingMeeting] = useState(true);
   const [meetingError, setMeetingError] = useState("");
 
+  const [participants, setParticipants] = useState(1); // 👈 NUEVO
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const initialized = useRef(false);
@@ -29,7 +36,6 @@ export default function VideoCall() {
   const roomId = searchParams.get("room");
   const currentUser = AuthService.getCurrentUser();
 
-  /** === CONTADOR DE DURACIÓN === */
   const [callDuration, setCallDuration] = useState(0);
   const durationRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -37,9 +43,6 @@ export default function VideoCall() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  /** =============================
-   *  INIT
-   * ============================= */
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
@@ -50,7 +53,6 @@ export default function VideoCall() {
         return;
       }
 
-      // validar reunión
       setLoadingMeeting(true);
       setMeetingError("");
 
@@ -63,13 +65,16 @@ export default function VideoCall() {
 
       setLoadingMeeting(false);
 
-      // conectar websocket
       WebSocketService.connect(currentUser.id);
 
       WebSocketService.onMessage((data: any) => {
         switch (data.action) {
           case "joined":
             setConnected(true);
+            break;
+
+          case "room-count":               // 👈 NUEVO
+            setParticipants(data.count);
             break;
 
           case "recent-messages":
@@ -114,16 +119,12 @@ export default function VideoCall() {
     init();
 
     return () => {
-      console.log("🧹 Cleanup VideoCall");
       WebSocketService.leaveRoom();
       WebSocketService.disconnect();
       initialized.current = false;
     };
   }, []);
 
-  /** =============================
-   * INICIAR CONTADOR AL CONECTAR
-   * ============================= */
   useEffect(() => {
     if (connected) {
       durationRef.current = setInterval(() => {
@@ -153,22 +154,11 @@ export default function VideoCall() {
     }
   };
 
-  /** ============================
-   * FINALIZAR LLAMADA
-   * ============================ */
   const handleEndCall = () => {
     if (durationRef.current) clearInterval(durationRef.current);
-
-    const finalDuration = callDuration;
-    console.log("Duración final:", finalDuration, "segundos");
-
-    // enviar duración al backend si quieres:
-    // await MeetingService.endCall(roomId, finalDuration);
-
     WebSocketService.leaveRoom();
     WebSocketService.disconnect();
     initialized.current = false;
-
     navigate("/start-meeting");
   };
 
@@ -196,21 +186,18 @@ export default function VideoCall() {
     );
   }
 
-  /** ============================
-   * UI
-   * ============================ */
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header title="Llamada en vivo" showMenu={true} />
 
       <main className="flex-1 flex flex-col lg:flex-row items-start justify-center gap-10 px-6 py-10">
-        
-        {/* VIDEO CARD */}
+
         <div
           className="w-full max-w-3xl bg-white rounded-2xl shadow-md border border-gray-200 p-6 flex flex-col items-center justify-between"
           style={{ height: "390px" }}
         >
           <div className="w-full flex justify-between items-center mb-2">
+
             <span className="text-sm text-gray-600">
               Room: <strong>{roomId}</strong>
             </span>
@@ -224,9 +211,13 @@ export default function VideoCall() {
                 {connected ? "🟢 Conectado" : "🔴 Desconectado"}
               </span>
 
+              {/* 👇 NUEVO: MOSTRAR CONECTADOS */}
               <div className="text-xs text-gray-700">
-                Tiempo: {Math.floor(callDuration / 60)}m{" "}
-                {callDuration % 60}s
+                Conectados: {participants} {participants === 1 ? "persona" : "personas"}
+              </div>
+
+              <div className="text-xs text-gray-700">
+                Tiempo: {Math.floor(callDuration / 60)}m {callDuration % 60}s
               </div>
             </div>
           </div>
@@ -253,14 +244,12 @@ export default function VideoCall() {
           </div>
         </div>
 
-        {/* CHAT PANEL */}
+        {/* CHAT */}
         <div
           className="w-full max-w-xs bg-white rounded-2xl shadow-md border border-gray-200 p-4 flex flex-col"
           style={{ height: "390px" }}
         >
-          <div className="flex justify-between items-center mb-2">
-            <h3 className="font-semibold text-gray-700">Chat en vivo</h3>
-          </div>
+          <h3 className="font-semibold text-gray-700 mb-2">Chat en vivo</h3>
 
           <div className="flex-1 border rounded-lg bg-gray-50 p-3 overflow-y-auto">
             {messages.length === 0 ? (
@@ -268,9 +257,9 @@ export default function VideoCall() {
                 No hay mensajes aún
               </p>
             ) : (
-              messages.map((msg, index) => (
+              messages.map((msg, idx) => (
                 <div
-                  key={index}
+                  key={idx}
                   className={`mb-2 p-2 rounded-lg ${
                     msg.senderId === currentUser?.id
                       ? "bg-blue-100 text-right ml-4"
@@ -282,7 +271,7 @@ export default function VideoCall() {
                       ? "Tú"
                       : msg.senderName || msg.senderId.substring(0, 8)}
                   </p>
-                  <p className="text-sm break-words">{msg.text}</p>
+                  <p className="text-sm">{msg.text}</p>
                 </div>
               ))
             )}
@@ -297,12 +286,13 @@ export default function VideoCall() {
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyPress={handleKeyPress}
               disabled={!connected}
-              className="flex-1 border px-3 py-2 rounded-lg focus:outline-none disabled:opacity-50"
+              className="flex-1 border px-3 py-2 rounded-lg"
             />
+
             <button
               onClick={handleSendMessage}
               disabled={!connected || !newMessage.trim()}
-              className="px-3 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-3 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50"
             >
               ➤
             </button>
