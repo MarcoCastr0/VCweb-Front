@@ -29,15 +29,14 @@ const Home = () => {
         >
           <Link
             to="/about"
-            className="text-white font-semibold text-sm md:text-lg hover:underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-white px-2 py-1 rounded-md"
+            className="text-white font-semibold text-sm md:text-lg hover:underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white rounded-md px-1"
           >
             Sobre nosotros
           </Link>
 
           <Link
             to="/login"
-            aria-label="Ir a la página de inicio de sesión"
-            className="btn"
+            className="bg-white text-[#005f99] font-semibold px-3 py-2 md:px-5 md:py-2 rounded-lg hover:bg-[#e8f6ff] transition shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
           >
             Iniciar sesión
           </Link>
