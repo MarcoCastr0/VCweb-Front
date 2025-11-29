@@ -1,8 +1,3 @@
-// --- LO QUE AÑADIMOS ---
-// 1. useState para participantes
-// 2. WebSocketService escucha "room-count"
-// 3. Mostrar el número de conectados en la UI
-
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import Header from "../components/Header";
@@ -19,6 +14,18 @@ interface Message {
   timestamp: string;
 }
 
+/* ------------------ 🔥 FUNCIÓN PARA LLAMAR BACKEND AL SALIR ------------------ */
+async function leaveMeetingBackend(meetingId: string) {
+  try {
+    await fetch(`${import.meta.env.VITE_API_URL}/meetings/${meetingId}/leave`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (err) {
+    console.error("Error leaving meeting:", err);
+  }
+}
+
 export default function VideoCall() {
   const [searchParams] = useSearchParams();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -27,7 +34,7 @@ export default function VideoCall() {
   const [loadingMeeting, setLoadingMeeting] = useState(true);
   const [meetingError, setMeetingError] = useState("");
 
-  const [participants, setParticipants] = useState(1); // 👈 NUEVO
+  const [participants, setParticipants] = useState(1);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -43,6 +50,7 @@ export default function VideoCall() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  /* ------------------ 🔥 EFECTO PRINCIPAL ------------------ */
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
@@ -56,6 +64,7 @@ export default function VideoCall() {
       setLoadingMeeting(true);
       setMeetingError("");
 
+      // Validar reunión
       const result = await MeetingService.validateMeeting(roomId);
       if (!result.success) {
         setMeetingError(result.message || "Reunión no válida");
@@ -65,6 +74,7 @@ export default function VideoCall() {
 
       setLoadingMeeting(false);
 
+      // Conectar WebSocket
       WebSocketService.connect(currentUser.id);
 
       WebSocketService.onMessage((data: any) => {
@@ -73,7 +83,7 @@ export default function VideoCall() {
             setConnected(true);
             break;
 
-          case "room-count":               // 👈 NUEVO
+          case "room-count":
             setParticipants(data.count);
             break;
 
@@ -104,6 +114,7 @@ export default function VideoCall() {
         }
       });
 
+      // Entrar a la sala
       const checkAndJoin = () => {
         if (WebSocketService.isConnected()) {
           WebSocketService.joinRoom(roomId);
@@ -125,6 +136,7 @@ export default function VideoCall() {
     };
   }, []);
 
+  /* ------------------ 🔥 CONTADOR DE DURACIÓN ------------------ */
   useEffect(() => {
     if (connected) {
       durationRef.current = setInterval(() => {
@@ -137,10 +149,25 @@ export default function VideoCall() {
     };
   }, [connected]);
 
+  /* ------------------ 🔥 SCROLL CHAT ------------------ */
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
+  /* ------------------ 🔥 DETECTAR CIERRE DE PESTAÑA ------------------ */
+  useEffect(() => {
+    const onUnload = () => {
+      if (roomId) leaveMeetingBackend(roomId);
+    };
+
+    window.addEventListener("beforeunload", onUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", onUnload);
+    };
+  }, [roomId]);
+
+  /* ------------------ 🔥 ENVIAR MENSAJE ------------------ */
   const handleSendMessage = () => {
     if (!newMessage.trim() || !connected) return;
     WebSocketService.sendMessage(newMessage, currentUser?.name);
@@ -154,13 +181,21 @@ export default function VideoCall() {
     }
   };
 
-  const handleEndCall = () => {
+  /* ------------------ 🔥 FINALIZAR LLAMADA ------------------ */
+  const handleEndCall = async () => {
     if (durationRef.current) clearInterval(durationRef.current);
+
+    // 🔥 Notificar al backend que salí
+    await leaveMeetingBackend(roomId!);
+
     WebSocketService.leaveRoom();
     WebSocketService.disconnect();
     initialized.current = false;
+
     navigate("/start-meeting");
   };
+
+  /* ------------------ 🔥 UI ------------------ */
 
   if (loadingMeeting) {
     return (
@@ -192,6 +227,7 @@ export default function VideoCall() {
 
       <main className="flex-1 flex flex-col lg:flex-row items-start justify-center gap-10 px-6 py-10">
 
+        {/* PANEL VIDEO */}
         <div
           className="w-full max-w-3xl bg-white rounded-2xl shadow-md border border-gray-200 p-6 flex flex-col items-center justify-between"
           style={{ height: "390px" }}
@@ -211,9 +247,10 @@ export default function VideoCall() {
                 {connected ? "🟢 Conectado" : "🔴 Desconectado"}
               </span>
 
-              {/* 👇 NUEVO: MOSTRAR CONECTADOS */}
+              {/* --- CONTADOR DE PARTICIPANTES --- */}
               <div className="text-xs text-gray-700">
-                Conectados: {participants} {participants === 1 ? "persona" : "personas"}
+                Conectados: {participants}{" "}
+                {participants === 1 ? "persona" : "personas"}
               </div>
 
               <div className="text-xs text-gray-700">

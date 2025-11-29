@@ -12,6 +12,7 @@ const StartMeeting = () => {
   const [error, setError] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [meetingInfo, setMeetingInfo] = useState<Meeting | null>(null);
+
   const navigate = useNavigate();
 
   /**
@@ -59,8 +60,7 @@ const StartMeeting = () => {
 
     try {
       const code = meetingCode.toUpperCase().trim();
-      
-      // First check if meeting exists and user can join
+
       const canJoinResult = await MeetingService.canJoinMeeting(code);
 
       if (!canJoinResult.success || !canJoinResult.canJoin) {
@@ -68,7 +68,6 @@ const StartMeeting = () => {
         return;
       }
 
-      // Show meeting info before joining
       setMeetingInfo(canJoinResult.meeting || null);
     } catch (err: any) {
       setError(err.message || "Error al verificar reunión");
@@ -95,6 +94,7 @@ const StartMeeting = () => {
       }
 
       const code = meetingCode.toUpperCase().trim();
+
       const result = await MeetingService.joinMeeting(code, user.id);
 
       if (!result.success) {
@@ -149,7 +149,7 @@ const StartMeeting = () => {
                 value={meetingCode}
                 onChange={(e) => {
                   setMeetingCode(e.target.value.toUpperCase());
-                  setMeetingInfo(null); // Reset info when code changes
+                  setMeetingInfo(null);
                 }}
                 maxLength={6}
                 disabled={loading}
@@ -169,7 +169,6 @@ const StartMeeting = () => {
               </button>
             </div>
 
-            {/* Meeting Info Display */}
             {meetingInfo && (
               <div className="p-4 bg-green-50 border border-green-200 rounded-lg mb-3">
                 <h4 className="font-semibold text-green-800 mb-2">
@@ -179,8 +178,8 @@ const StartMeeting = () => {
                   <p>📋 Código: <strong>{meetingInfo.meetingId}</strong></p>
                   <p>👥 Participantes: {MeetingService.getMeetingStats(meetingInfo)}</p>
                   <p>
-                    {MeetingService.isMeetingFull(meetingInfo) 
-                      ? "⚠️ Reunión llena" 
+                    {MeetingService.isMeetingFull(meetingInfo)
+                      ? "⚠️ Reunión llena"
                       : "✅ Espacio disponible"}
                   </p>
                 </div>
@@ -202,7 +201,6 @@ const StartMeeting = () => {
               O crea una nueva reunión
             </p>
 
-            {/* Advanced Options Toggle */}
             <button
               onClick={() => setShowAdvanced(!showAdvanced)}
               className="w-full text-left text-sm text-[#0066A1] hover:text-[#004F80] 
@@ -212,7 +210,6 @@ const StartMeeting = () => {
               <span>{showAdvanced ? "▲" : "▼"}</span>
             </button>
 
-            {/* Advanced Settings */}
             {showAdvanced && (
               <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -238,7 +235,6 @@ const StartMeeting = () => {
               </div>
             )}
 
-            {/* Create Meeting Button */}
             <button
               type="button"
               onClick={handleNewMeeting}

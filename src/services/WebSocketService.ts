@@ -1,6 +1,9 @@
 /**
  * WebSocket service for real-time communication with the backend.
  * Manages connections, room joining, chat messages, and WebRTC signaling.
+ *
+ * Now sends explicit userId + roomId on join/leave so the server can
+ * update participant counts and emit `room-count`.
  */
 
 const WS_URL = (import.meta as any).env.VITE_API_URL2 || "ws://localhost:4000";
@@ -14,20 +17,24 @@ export class WebSocketService {
 
   /**
    * Establishes (or reuses) WebSocket connection to the backend server.
+   * Ensures userId is saved for later messages (join/leave).
    */
   static connect(userId: string): WebSocket {
-    // Reusar si ya está abierta o conectando
+    // Reuse existing open/connecting socket
     if (
       this.socket &&
       (this.socket.readyState === WebSocket.OPEN ||
         this.socket.readyState === WebSocket.CONNECTING)
     ) {
+      // make sure we keep userId up to date
+      this.userId = userId;
       console.log("♻️ Reusing existing WebSocket connection");
       return this.socket;
     }
 
     if (this.isConnecting) {
       console.log("⏳ WebSocket connection already in progress");
+      this.userId = userId;
       return this.socket as WebSocket;
     }
 
@@ -35,7 +42,8 @@ export class WebSocketService {
     this.isConnecting = true;
     this.userId = userId;
 
-    this.socket = new WebSocket(`${WS_URL}/?uid=${userId}`);
+    // include user id in query for server convenience (optional)
+    this.socket = new WebSocket(`${WS_URL}/?uid=${encodeURIComponent(userId)}`);
 
     this.socket.onopen = () => {
       console.log("✅ WebSocket Connected");
@@ -47,26 +55,56 @@ export class WebSocketService {
       this.isConnecting = false;
     };
 
-    this.socket.onclose = () => {
-      console.log("🔴 WebSocket Disconnected");
+    this.socket.onclose = (event) => {
+      console.log("🔴 WebSocket Disconnected", event.code, event.reason);
       this.isConnecting = false;
+      // cleanup local state
       this.socket = null;
       this.roomId = null;
+      // keep userId so a reconnect could reuse it if needed
     };
 
-    // Reasignar callback si ya estaba registrada
-    if (this.messageCallback) {
-      this.socket.onmessage = (event) => {
+    // assign message handler if callback already provided
+    this.socket.onmessage = (event) => {
+      try {
         const msg = JSON.parse(event.data);
         this.messageCallback?.(msg);
-      };
-    }
+      } catch (err) {
+        console.warn("Invalid WS message:", event.data);
+      }
+    };
 
     return this.socket;
   }
 
   /**
-   * Joins a specific chat room.
+   * Generic helper to send structured events
+   */
+  static sendEvent(action: string, payload?: any): void {
+    if (!this.socket) {
+      console.warn("WebSocket not connected, cannot send event:", action);
+      return;
+    }
+
+    if (this.socket.readyState !== WebSocket.OPEN) {
+      console.warn("WebSocket not OPEN, cannot send event:", action);
+      return;
+    }
+
+    const message = {
+      action,
+      payload: payload || {},
+    };
+
+    try {
+      this.socket.send(JSON.stringify(message));
+    } catch (err) {
+      console.error("Error sending WS message:", err);
+    }
+  }
+
+  /**
+   * Joins a specific chat room. Sends roomId + userId so server can register the user.
    */
   static joinRoom(roomId: string): void {
     if (!this.socket) {
@@ -87,12 +125,11 @@ export class WebSocketService {
 
     this.roomId = roomId;
 
-    this.socket.send(
-      JSON.stringify({
-        action: "join",
-        payload: { roomId },
-      })
-    );
+    // send join with roomId + userId so server can increment count and broadcast
+    this.sendEvent("join", {
+      roomId,
+      userId: this.userId,
+    });
   }
 
   /**
@@ -109,33 +146,29 @@ export class WebSocketService {
       return;
     }
 
-    this.socket.send(
-      JSON.stringify({
-        action: "chat-message",
-        payload: {
-          roomId: this.roomId,
-          text,
-          senderId: this.userId,
-          senderName: senderName || this.userId,
-        },
-      })
-    );
+    this.sendEvent("chat-message", {
+      roomId: this.roomId,
+      text,
+      senderId: this.userId,
+      senderName: senderName || this.userId,
+    });
   }
 
   /**
-   * Leaves the current room.
+   * Leaves the current room. Sends roomId + userId so server can decrement count.
+   * This should be called from UI when the user clicks "hang up".
    */
   static leaveRoom(): void {
     if (!this.socket || !this.roomId) return;
 
     if (this.socket.readyState === WebSocket.OPEN) {
-      this.socket.send(
-        JSON.stringify({
-          action: "leave",
-        })
-      );
+      this.sendEvent("leave", {
+        roomId: this.roomId,
+        userId: this.userId,
+      });
     }
 
+    // clear local roomId immediately to avoid duplicate sends
     this.roomId = null;
   }
 
@@ -147,11 +180,15 @@ export class WebSocketService {
 
     console.log("🔌 Disconnecting WebSocket");
 
-    if (
-      this.socket.readyState === WebSocket.OPEN ||
-      this.socket.readyState === WebSocket.CONNECTING
-    ) {
-      this.socket.close();
+    try {
+      if (
+        this.socket.readyState === WebSocket.OPEN ||
+        this.socket.readyState === WebSocket.CONNECTING
+      ) {
+        this.socket.close();
+      }
+    } catch (err) {
+      console.warn("Error while closing WebSocket:", err);
     }
 
     this.socket = null;
@@ -169,8 +206,12 @@ export class WebSocketService {
 
     if (this.socket) {
       this.socket.onmessage = (event) => {
-        const msg = JSON.parse(event.data);
-        callback(msg);
+        try {
+          const msg = JSON.parse(event.data);
+          callback(msg);
+        } catch (err) {
+          console.warn("Invalid WS message:", event.data);
+        }
       };
     }
   }
