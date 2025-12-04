@@ -1,3 +1,9 @@
+/**
+ * Service for managing meeting operations via Backend 1 (Firestore).
+ *
+ * Handles meeting creation, validation, listing and closing.
+ */
+
 const API_URL = (import.meta as any).env.VITE_API_URL;
 
 export interface Meeting {
@@ -5,35 +11,40 @@ export interface Meeting {
   meetingId: string;
   hostId: string;
   participantCount?: number;
+  maxParticipants?: number;
   isActive?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
 
-interface ApiResponse<T> {
-  success?: boolean;
+interface ApiResponse {
+  success: boolean;
   message?: string;
   meetingId?: string;
-  meeting?: T;
-  meetings?: T[];
-  participantCount?: number;
-  [key: string]: any;
+  meeting?: Meeting;
+  meetings?: Meeting[];
+  maxParticipants?: number;
 }
 
 export class MeetingService {
-  static async createMeeting(hostId: string): Promise<{
-    success: boolean;
-    meetingId: string;
-    message?: string;
-  }> {
+  /**
+   * Creates a new meeting room.
+   */
+  static async createMeeting(
+    hostId: string,
+    maxParticipants?: number
+  ): Promise<{ success: boolean; meetingId: string; message?: string }> {
     try {
+      const body: any = { hostId };
+      if (maxParticipants) body.maxParticipants = maxParticipants;
+
       const response = await fetch(`${API_URL}/api/meetings`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hostId }),
+        body: JSON.stringify(body),
       });
 
-      const data = (await response.json()) as ApiResponse<Meeting>;
+      const data = (await response.json()) as ApiResponse;
 
       if (!response.ok || !data.success) {
         return {
@@ -56,9 +67,13 @@ export class MeetingService {
     }
   }
 
+  /**
+   * Validates if a meeting code exists and is active.
+   */
   static async validateMeeting(meetingId: string): Promise<{
     success: boolean;
     meeting?: Meeting;
+    maxParticipants?: number;
     message?: string;
   }> {
     try {
@@ -67,7 +82,7 @@ export class MeetingService {
         headers: { "Content-Type": "application/json" },
       });
 
-      const data = (await response.json()) as ApiResponse<Meeting>;
+      const data = (await response.json()) as ApiResponse;
 
       if (!response.ok || !data.success) {
         return {
@@ -78,7 +93,8 @@ export class MeetingService {
 
       return {
         success: true,
-        meeting: data.meeting as Meeting,
+        meeting: data.meeting,
+        maxParticipants: data.maxParticipants || data.meeting?.maxParticipants || 10,
       };
     } catch (error: any) {
       return {
@@ -88,18 +104,17 @@ export class MeetingService {
     }
   }
 
+  /**
+   * Gets all meetings created by a user.
+   */
   static async getUserMeetings(userId: string): Promise<{
     success: boolean;
     meetings?: Meeting[];
     message?: string;
   }> {
     try {
-      const response = await fetch(`${API_URL}/api/meetings/user/${userId}`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      });
-
-      const data = (await response.json()) as ApiResponse<Meeting>;
+      const response = await fetch(`${API_URL}/api/meetings/user/${userId}`);
+      const data = (await response.json()) as ApiResponse;
 
       if (!response.ok || !data.success) {
         return {
@@ -110,7 +125,7 @@ export class MeetingService {
 
       return {
         success: true,
-        meetings: (data.meetings || []) as Meeting[],
+        meetings: data.meetings || [],
       };
     } catch (error: any) {
       return {
@@ -120,6 +135,9 @@ export class MeetingService {
     }
   }
 
+  /**
+   * Closes a meeting by meetingId.
+   */
   static async closeMeeting(meetingId: string): Promise<{
     success: boolean;
     message?: string;
@@ -129,7 +147,7 @@ export class MeetingService {
         method: "DELETE",
       });
 
-      const data = (await response.json()) as ApiResponse<Meeting>;
+      const data = (await response.json()) as ApiResponse;
 
       if (!response.ok || !data.success) {
         return {

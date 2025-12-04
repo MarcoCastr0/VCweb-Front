@@ -1,6 +1,6 @@
 /**
  * Login page component that handles user authentication via email/password
- * and social providers (Google and Facebook). Includes form validation,
+ * and social providers (Google and Github). Includes form validation,
  * password visibility toggle, loading state handling, and error feedback.
  *
  * @component
@@ -49,7 +49,8 @@ const Login = () => {
     }
   };
 
-  const handleSocialLogin = async (provider: 'google' | 'facebook' ) => {
+  // Cambiado para aceptar GitHub
+  const handleSocialLogin = async (provider: "google" | "github") => {
     setLoading(true);
     setError("");
 
@@ -116,6 +117,7 @@ const Login = () => {
                 >
                   Contraseña
                 </label>
+
                 <div className="relative">
                   <input
                     id="password"
@@ -126,13 +128,13 @@ const Login = () => {
                     required
                     disabled={loading}
                   />
+
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
                     disabled={loading}
                   >
-                    {/* SVG icons remain untouched */}
                     {showPassword ? (
                       <svg
                         className="w-5 h-5"
@@ -206,9 +208,12 @@ const Login = () => {
               <div className="flex-1 border-t border-gray-300"></div>
             </div>
 
+            {/* Botones de Google y GitHub */}
             <div className="flex justify-center gap-6">
+
+              {/* GOOGLE */}
               <button 
-                onClick={() => handleSocialLogin('google')}
+                onClick={() => handleSocialLogin("google")}
                 disabled={loading}
                 className="w-12 h-12 rounded-full bg-white border-2 border-gray-200 flex items-center justify-center hover:border-[#00bfff] hover:shadow-md transition"
               >
@@ -232,15 +237,21 @@ const Login = () => {
                 </svg>
               </button>
 
+              {/* GITHUB */}
               <button 
-                onClick={() => handleSocialLogin('facebook')}
+                onClick={() => handleSocialLogin("github")}
                 disabled={loading}
-                className="w-12 h-12 rounded-full bg-[#1877F2] flex items-center justify-center hover:bg-[#145dbf] hover:shadow-md transition"
+                className="w-12 h-12 rounded-full bg-black flex items-center justify-center hover:bg-gray-800 hover:shadow-md transition"
               >
-                <svg className="w-7 h-7" fill="white" viewBox="0 0 24 24">
-                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                <svg 
+                  className="w-7 h-7" 
+                  fill="white" 
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M12 0.5C5.37 0.5 0 5.87 0 12.5c0 5.29 3.438 9.773 8.207 11.363.6.11.793-.26.793-.577v-2.234c-3.338.726-4.033-1.61-4.033-1.61-.546-1.387-1.333-1.756-1.333-1.756-1.09-.745.083-.73.083-.73 1.205.085 1.84 1.237 1.84 1.237 1.07 1.834 2.807 1.304 3.492.997.108-.775.418-1.305.762-1.604-2.665-.304-5.466-1.36-5.466-6.053 0-1.337.47-2.431 1.236-3.286-.124-.303-.536-1.523.117-3.176 0 0 1.008-.323 3.3 1.254a11.4 11.4 0 0 1 3.003-.404c1.018.005 2.045.138 3.003.404 2.29-1.577 3.297-1.254 3.297-1.254.655 1.653.243 2.873.12 3.176.77.855 1.235 1.949 1.235 3.286 0 4.704-2.807 5.745-5.48 6.043.43.372.823 1.103.823 2.222v3.293c0 .32.192.694.8.576C20.565 22.27 24 17.79 24 12.5 24 5.87 18.63.5 12 .5z"/>
                 </svg>
               </button>
+
             </div>
           </div>
         </div>

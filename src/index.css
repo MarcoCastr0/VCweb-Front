@@ -1,38 +1,48 @@
 @import 'tailwindcss';
 
-/* 🎨 Estilos globales para TODOS los inputs, selects y textareas */
+/* Inputs accesibles */
 input,
 textarea,
 select {
-  /* Azul MUY claro */
-  @apply border-2 border-[#B3E5FC] rounded-md px-3 py-2 outline-none;
+  @apply border-2 border-[#99D6F4] rounded-md px-3 py-2 outline-none text-[#1a1a1a];
 }
 
 input:focus,
 textarea:focus,
 select:focus {
-  /* Azul oscuro */
-  @apply border-[#4FC3F7] ring-2 ring-[#4FC3F7]/60;
+  @apply border-[#0074CC] ring-4 ring-[#0074CC]/40;
 }
-/* Tarjetas principales: solo div con bg-white + padding grande */
+
+/* Tarjetas con borde accesible */
 div.bg-white.p-6,
 div.bg-white.p-8,
 div.bg-white.p-10,
 div.bg-white.p-12 {
-  @apply border-2 border-[#B3E5FC] rounded-2xl;
+  @apply border-2 border-[#99D6F4] rounded-2xl;
 }
 
-/* 🎨 Estilo global para TODOS los botones con .btn-primary */
+/* Botón Primario – Cumple WCAG AA */
 .btn {
-  @apply bg-[#04A3EA] text-white font-semibold 
-         py-3 px-6 text-[16px]
-         rounded-xl transition-all hover:bg-[#0087C5] shadow-md
-         w-full max-w-[300px] mx-auto block;
+  @apply bg-[#0074CC] text-white font-semibold
+  py-3 px-6 text-[16px]
+  rounded-xl transition-all hover:bg-[#004F80] shadow-lg
+  w-full max-w-[300px] mx-auto block;
 }
 
+/* Botón Peligro – Cumple WCAG AAA */
 .btn_primary {
-  @apply bg-[#EF4444] text-white font-semibold 
-         py-3 px-6 text-[16px]
-         rounded-xl transition-all hover:bg-[#C53030] shadow-md
-         w-full max-w-[300px] mx-auto block;
+  @apply bg-[#CC0000] text-white font-semibold
+  py-3 px-6 text-[16px]
+  rounded-xl transition-all hover:bg-[#990000] shadow-lg
+  w-full max-w-[300px] mx-auto block;
+}
+
+/* Enlaces importantes accesibles */
+a {
+  @apply text-[#0074CC] underline-offset-4 hover:underline;
+}
+
+/* Enlaces blancos solo en HOME */
+.home-link {
+  @apply text-white underline-offset-4 hover:underline;
 }

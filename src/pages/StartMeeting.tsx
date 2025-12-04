@@ -2,17 +2,21 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-import { MeetingService } from "../services/MeetingService";
+import { MeetingService, type Meeting } from "../services/MeetingService";
 import { AuthService } from "../services/AuthService";
 
 const StartMeeting = () => {
   const [meetingCode, setMeetingCode] = useState("");
+  const [maxParticipants, setMaxParticipants] = useState(10);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [meetingInfo, setMeetingInfo] = useState<Meeting | null>(null);
+
   const navigate = useNavigate();
 
   /**
-   * Creates a new meeting in Backend 1 and redirects to video-call.
+   * Creates a new meeting in Backend 1 with participant limit and redirects to video-call.
    */
   const handleNewMeeting = async () => {
     setLoading(true);
@@ -26,13 +30,14 @@ const StartMeeting = () => {
         return;
       }
 
-      const result = await MeetingService.createMeeting(user.id);
+      const result = await MeetingService.createMeeting(user.id, maxParticipants);
 
       if (!result.success) {
         setError(result.message || "Error al crear la reunión");
         return;
       }
 
+      // Redirect to video call page
       navigate(`/video-call?room=${result.meetingId}`);
     } catch (err: any) {
       setError(err.message || "Error inesperado al crear reunión");
@@ -42,9 +47,9 @@ const StartMeeting = () => {
   };
 
   /**
-   * Validates meeting code in Backend 1 and redirects to video-call.
+   * Validates meeting code with Backend 1.
    */
-  const handleJoinMeeting = async () => {
+  const handleCheckMeeting = async () => {
     if (!meetingCode.trim()) {
       setError("Por favor ingresa un código de reunión");
       return;
@@ -52,30 +57,59 @@ const StartMeeting = () => {
 
     setLoading(true);
     setError("");
+    setMeetingInfo(null);
 
     try {
       const code = meetingCode.toUpperCase().trim();
       const result = await MeetingService.validateMeeting(code);
 
       if (!result.success) {
-        setError(result.message || "Código de reunión inválido");
+        setError(result.message || "Reunión no encontrada");
         return;
       }
 
-      navigate(`/video-call?room=${code}`);
+      if (!result.meeting?.isActive) {
+        setError("Esta reunión ya no está activa");
+        return;
+      }
+
+      // Show meeting info
+      setMeetingInfo(result.meeting);
     } catch (err: any) {
-      setError(err.message || "Error inesperado al validar reunión");
+      setError(err.message || "Error al verificar reunión");
     } finally {
       setLoading(false);
     }
   };
 
+  /**
+   * Join the validated meeting.
+   * Backend 2 will validate capacity in real-time via WebSocket.
+   */
+  const handleJoinMeeting = () => {
+    if (!meetingCode.trim()) return;
+
+    const user = AuthService.getCurrentUser();
+    if (!user) {
+      setError("Debes iniciar sesión primero");
+      navigate("/login");
+      return;
+    }
+
+    const code = meetingCode.toUpperCase().trim();
+    
+    // Navigate to video call - Backend 2 will handle capacity validation
+    navigate(`/video-call?room=${code}`);
+  };
+
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      <Header title="Inicia una reunion" showMenu={true} />
+      <Header title="Inicia una reunión" showMenu={true} />
 
-      <main className="flex-1 w-full px-6 lg:px-16 py-6 flex flex-col lg:flex-row 
-                 items-center justify-center gap-16">
+      <main
+        className="flex-1 w-full px-6 lg:px-16 py-6 flex flex-col lg:flex-row 
+                 items-center justify-center gap-16"
+      >
         <section className="max-w-xl">
           <h1 className="text-4xl font-bold text-gray-900 leading-snug mb-4">
             Video conferencias seguras <br /> para tus proyectos digitales.
@@ -98,35 +132,125 @@ const StartMeeting = () => {
             </div>
           )}
 
-          <div className="flex gap-3 mb-5">
-            <input
-              type="text"
-              placeholder="Introduce un código"
-              value={meetingCode}
-              onChange={(e) => setMeetingCode(e.target.value.toUpperCase())}
-              maxLength={6}
-              disabled={loading}
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg
-                         focus:outline-none focus:ring-2 focus:ring-[#04A3EA]"
-            />
-            <button
-              onClick={handleJoinMeeting}
-              disabled={loading}
-              className="bg-[#04A3EA] text-white font-semibold px-5 rounded-lg
-                         transition-all hover:bg-[#0087C5] shadow-sm disabled:opacity-50"
-            >
-              {loading ? "..." : "Unirme"}
-            </button>
+          {/* Join Meeting Section */}
+          <div className="mb-6">
+            <div className="flex gap-3 mb-3">
+              <input
+                type="text"
+                placeholder="Introduce un código"
+                value={meetingCode}
+                onChange={(e) => {
+                  setMeetingCode(e.target.value.toUpperCase());
+                  setMeetingInfo(null);
+                  setError("");
+                }}
+                maxLength={6}
+                disabled={loading}
+                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg
+                           focus:outline-none focus:ring-2 focus:ring-[#04A3EA]
+                           disabled:bg-gray-100 disabled:cursor-not-allowed"
+              />
+              <button
+                onClick={handleCheckMeeting}
+                disabled={loading || !meetingCode.trim()}
+                className="bg-[#0066A1] text-white font-semibold px-5 py-2 rounded-lg
+                           transition-all hover:bg-[#004F80] hover:shadow-md
+                           focus-visible:ring-2 focus-visible:ring-white
+                           disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? "..." : "Verificar"}
+              </button>
+            </div>
+
+            {meetingInfo && (
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg mb-3">
+                <h4 className="font-semibold text-green-800 mb-2">
+                  ✅ Reunión encontrada
+                </h4>
+                <div className="text-sm text-green-700 space-y-1">
+                  <p>
+                    📋 Código: <strong>{meetingInfo.meetingId}</strong>
+                  </p>
+                  <p>
+                    👥 Límite: {meetingInfo.maxParticipants || 10} participantes
+                  </p>
+                  <p>✅ Reunión activa</p>
+                </div>
+                <button
+                  onClick={handleJoinMeeting}
+                  disabled={loading}
+                  className="mt-3 w-full bg-green-600 text-white font-semibold py-2 rounded-lg
+                             hover:bg-green-700 transition-all
+                             disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Unirse Ahora
+                </button>
+                <p className="text-xs text-green-600 mt-2 text-center">
+                  La capacidad se validará en tiempo real al entrar
+                </p>
+              </div>
+            )}
           </div>
 
-          <button 
-            type="button" 
-            className="btn"
-            onClick={handleNewMeeting}
-            disabled={loading}
-          >
-            ✚ Nueva Reunión
-          </button>
+          <div className="border-t border-gray-200 pt-4">
+            <p className="text-center text-gray-500 text-sm mb-3">
+              O crea una nueva reunión
+            </p>
+
+            <button
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              className="w-full text-left text-sm text-[#0066A1] hover:text-[#004F80] 
+                         mb-3 flex items-center justify-between"
+            >
+              <span>⚙️ Opciones avanzadas</span>
+              <span>{showAdvanced ? "▲" : "▼"}</span>
+            </button>
+
+            {showAdvanced && (
+              <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Máximo de participantes
+                </label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="range"
+                    min={2}
+                    max={10}
+                    value={maxParticipants}
+                    onChange={(e) => setMaxParticipants(Number(e.target.value))}
+                    disabled={loading}
+                    className="flex-1"
+                  />
+                  <span className="text-lg font-semibold text-gray-800 min-w-[3rem] text-center">
+                    {maxParticipants}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Límite de personas que podrán unirse (2-10)
+                </p>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={handleNewMeeting}
+              disabled={loading}
+              className="w-full bg-[#0074CC] text-white font-semibold py-3 rounded-lg
+                         transition-all hover:bg-[#004F80] hover:shadow-md
+                         focus-visible:ring-2 focus-visible:ring-white
+                         disabled:opacity-50 disabled:cursor-not-allowed
+                         flex items-center justify-center gap-2"
+            >
+              <span className="text-xl">✚</span>
+              {loading ? "Creando..." : "Nueva Reunión"}
+            </button>
+
+            {!showAdvanced && (
+              <p className="text-center text-gray-400 text-xs mt-2">
+                Por defecto: máximo {maxParticipants} participantes
+              </p>
+            )}
+          </div>
 
           <p className="text-center text-gray-500 text-sm mt-4">
             Crea o únete a una reunión en segundos

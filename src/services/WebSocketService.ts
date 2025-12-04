@@ -1,6 +1,6 @@
 /**
- * WebSocket service for real-time communication with the backend.
- * Manages connections, room joining, chat messages, and WebRTC signaling.
+ * WebSocket service for real-time communication with Backend 2.
+ * Manages connections, room joining, chat messages, and participant tracking.
  */
 
 const WS_URL = (import.meta as any).env.VITE_API_URL2 || "ws://localhost:4000";
@@ -13,10 +13,12 @@ export class WebSocketService {
   private static messageCallback: ((data: any) => void) | null = null;
 
   /**
-   * Establishes (or reuses) WebSocket connection to the backend server.
+   * Establishes (or reuses) WebSocket connection to Backend 2.
+   *
+   * @param {string} userId - User ID.
+   * @returns {WebSocket} The WebSocket instance.
    */
   static connect(userId: string): WebSocket {
-    // Reusar si ya está abierta o conectando
     if (
       this.socket &&
       (this.socket.readyState === WebSocket.OPEN ||
@@ -35,7 +37,7 @@ export class WebSocketService {
     this.isConnecting = true;
     this.userId = userId;
 
-    this.socket = new WebSocket(`${WS_URL}/?uid=${userId}`);
+    this.socket = new WebSocket(`${WS_URL}?uid=${userId}`);
 
     this.socket.onopen = () => {
       console.log("✅ WebSocket Connected");
@@ -54,7 +56,6 @@ export class WebSocketService {
       this.roomId = null;
     };
 
-    // Reasignar callback si ya estaba registrada
     if (this.messageCallback) {
       this.socket.onmessage = (event) => {
         const msg = JSON.parse(event.data);
@@ -66,9 +67,12 @@ export class WebSocketService {
   }
 
   /**
-   * Joins a specific chat room.
+   * Joins a specific room.
+   *
+   * @param {string} roomId - Meeting ID.
+   * @param {string} userId - User ID.
    */
-  static joinRoom(roomId: string): void {
+  static joinRoom(roomId: string, userId: string): void {
     if (!this.socket) {
       console.warn("WebSocket not connected yet, cannot join room");
       return;
@@ -76,7 +80,7 @@ export class WebSocketService {
 
     if (this.socket.readyState !== WebSocket.OPEN) {
       console.warn("⏳ WebSocket not OPEN, delaying joinRoom");
-      setTimeout(() => this.joinRoom(roomId), 100);
+      setTimeout(() => this.joinRoom(roomId, userId), 100);
       return;
     }
 
@@ -90,13 +94,16 @@ export class WebSocketService {
     this.socket.send(
       JSON.stringify({
         action: "join",
-        payload: { roomId },
+        payload: { roomId, userId },
       })
     );
   }
 
   /**
    * Sends a chat message to the current room.
+   *
+   * @param {string} text - Message text.
+   * @param {string} senderName - Sender's name.
    */
   static sendMessage(text: string, senderName?: string): void {
     if (!this.socket || !this.roomId || !this.userId) {
@@ -132,6 +139,7 @@ export class WebSocketService {
       this.socket.send(
         JSON.stringify({
           action: "leave",
+          payload: {},
         })
       );
     }
@@ -163,6 +171,8 @@ export class WebSocketService {
 
   /**
    * Sets up message listener for incoming WebSocket messages.
+   *
+   * @param {Function} callback - Callback to handle messages.
    */
   static onMessage(callback: (data: any) => void): void {
     this.messageCallback = callback;
@@ -177,6 +187,8 @@ export class WebSocketService {
 
   /**
    * Checks if socket is open.
+   *
+   * @returns {boolean} True if connected.
    */
   static isConnected(): boolean {
     return !!this.socket && this.socket.readyState === WebSocket.OPEN;

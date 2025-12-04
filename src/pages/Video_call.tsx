@@ -21,6 +21,8 @@ export default function VideoCall() {
   const [connected, setConnected] = useState(false);
   const [loadingMeeting, setLoadingMeeting] = useState(true);
   const [meetingError, setMeetingError] = useState("");
+  const [participantCount, setParticipantCount] = useState(0);
+  const [maxParticipants, setMaxParticipants] = useState(10);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const initialized = useRef(false);
@@ -53,6 +55,13 @@ export default function VideoCall() {
         return;
       }
 
+      if (!result.meeting?.isActive) {
+        setMeetingError("Esta reunión ya no está activa");
+        navigate("/start-meeting");
+        return;
+      }
+
+      setMaxParticipants(result.maxParticipants || 10);
       setLoadingMeeting(false);
 
       // 2) Conectar WebSocket con Backend 2
@@ -61,7 +70,25 @@ export default function VideoCall() {
       WebSocketService.onMessage((data) => {
         switch (data.action) {
           case "joined":
+            console.log("✅ Unido a la sala:", data.payload);
             setConnected(true);
+            setParticipantCount(data.payload.participantCount || 0);
+            setMaxParticipants(data.payload.maxParticipants || 10);
+            break;
+
+          case "join-error":
+            console.error("❌ Error al unirse:", data.payload);
+            handleJoinError(data.payload);
+            break;
+
+          case "user-joined":
+            console.log("👤 Nuevo usuario:", data.payload);
+            setParticipantCount(data.payload.participantCount || 0);
+            break;
+
+          case "user-left":
+            console.log("👋 Usuario salió:", data.payload);
+            setParticipantCount(data.payload.participantCount || 0);
             break;
 
           case "recent-messages":
@@ -93,8 +120,7 @@ export default function VideoCall() {
 
       const checkAndJoin = () => {
         if (WebSocketService.isConnected()) {
-          WebSocketService.joinRoom(roomId);
-          setConnected(true);
+          WebSocketService.joinRoom(roomId, currentUser.id);
         } else {
           setTimeout(checkAndJoin, 150);
         }
@@ -105,18 +131,41 @@ export default function VideoCall() {
 
     init();
 
-    // cleanup SOLO al desmontar la página
     return () => {
       console.log("🧹 Cleanup VideoCall: leaving room & disconnecting WS");
       WebSocketService.leaveRoom();
       WebSocketService.disconnect();
       initialized.current = false;
     };
-  }, []); // <-- sin dependencias, se ejecuta una sola vez
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  const handleJoinError = (payload: any) => {
+    let errorMessage = "Error al unirse a la reunión";
+
+    switch (payload.code) {
+      case "MEETING_NOT_FOUND":
+        errorMessage = "La reunión no existe";
+        break;
+      case "MEETING_INACTIVE":
+        errorMessage = "Esta reunión ya no está activa";
+        break;
+      case "MEETING_FULL":
+        errorMessage = `La reunión está llena (${payload.max}/${payload.max} participantes)`;
+        break;
+      case "ROOMID_REQUIRED":
+        errorMessage = "Error: falta el ID de la reunión";
+        break;
+      default:
+        errorMessage = payload.message || "Error desconocido";
+    }
+
+    setMeetingError(errorMessage);
+    setTimeout(() => navigate("/start-meeting"), 2000);
+  };
 
   const handleSendMessage = () => {
     if (!newMessage.trim() || !connected) return;
@@ -176,13 +225,18 @@ export default function VideoCall() {
             <span className="text-sm text-gray-600">
               Room: <strong>{roomId}</strong>
             </span>
-            <span
-              className={`text-sm font-semibold ${
-                connected ? "text-green-600" : "text-red-600"
-              }`}
-            >
-              {connected ? "🟢 Conectado" : "🔴 Desconectado"}
-            </span>
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-600">
+                Participantes: <strong>{participantCount}/{maxParticipants}</strong>
+              </span>
+              <span
+                className={`text-sm font-semibold ${
+                  connected ? "text-green-600" : "text-red-600"
+                }`}
+              >
+                {connected ? "🟢 Conectado" : "🔴 Desconectado"}
+              </span>
+            </div>
           </div>
 
           <div className="flex-1 flex items-center justify-center">
