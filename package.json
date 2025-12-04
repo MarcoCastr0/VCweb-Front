@@ -13,10 +13,12 @@
     "@tailwindcss/vite": "^4.1.17",
     "firebase": "^12.6.0",
     "lucide-react": "^0.554.0",
+    "peerjs": "^1.5.5",
     "process": "^0.11.10",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.9.6",
+    "socket.io-client": "^4.8.1",
     "tailwindcss": "^4.1.17"
   },
   "devDependencies": {
@@ -24,6 +26,7 @@
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
+    "@types/webrtc": "^0.0.47",
     "@vitejs/plugin-react": "^5.1.0",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
