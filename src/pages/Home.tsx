@@ -31,7 +31,7 @@ const Home = () => {
             to="/about"
             className="home-link font-semibold text-sm md:text-lg
              drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]
-             focus-visible:outline focus-visible:outline-white
+             focus-visible:outline-2 focus-visible:outline-white
              rounded-md px-1 transition"
           >
             Sobre nosotros
@@ -39,7 +39,7 @@ const Home = () => {
 
           <Link
             to="/login"
-            className="bg-white text-[#005f99] font-semibold px-3 py-2 md:px-5 md:py-2 rounded-lg hover:bg-[#e8f6ff] transition shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+            className="bg-white text-[#005f99] font-semibold px-3 py-2 md:px-5 md:py-2 rounded-lg hover:bg-[#e8f6ff] transition shadow-md focus-visible:outline-2 focus-visible:outline-white"
           >
             Iniciar sesión
           </Link>
