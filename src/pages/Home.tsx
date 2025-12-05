@@ -39,7 +39,7 @@ const Home = () => {
 
           <Link
             to="/login"
-            className="bg-white text-[#005f99] font-semibold px-3 py-2 md:px-5 md:py-2 rounded-lg hover:bg-[#e8f6ff] transition shadow-md focus-visible:outline-2 focus-visible:outline-white"
+            className="bg-white text-[#005f99] font-semibold px-3 py-2 md:px-5 md:py-2 rounded-lg hover:bg-[#e8f6ff] transition shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
           >
             Iniciar sesión
           </Link>
