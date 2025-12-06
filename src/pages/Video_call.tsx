@@ -1,17 +1,69 @@
+"use client";
+
+import type React from "react";
+
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-import { MicOff, VideoOff, PhoneOff, User } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, PhoneOff, User } from "lucide-react";
 import { WebSocketService } from "../services/WebSocketService";
 import { AuthService } from "../services/AuthService";
 import { MeetingService } from "../services/MeetingService";
+import { useVideoCall } from "../hooks/useVideoCall";
 
 interface Message {
   senderId: string;
   senderName?: string;
   text: string;
   timestamp: string;
+}
+
+interface ParticipantVideoProps {
+  participant: {
+    socketId: string;
+    odiserId: string;
+    displayName: string;
+    isAudioEnabled: boolean;
+    isVideoEnabled: boolean;
+    stream?: MediaStream;
+  };
+}
+
+/**
+ * Component to display a remote participant's video stream
+ * @param participant - The participant data including their media stream
+ */
+function ParticipantVideo({ participant }: ParticipantVideoProps) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (videoRef.current && participant.stream) {
+      videoRef.current.srcObject = participant.stream;
+    }
+  }, [participant.stream]);
+
+  return (
+    <div className="relative bg-gray-800 rounded-lg overflow-hidden aspect-video">
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        className="w-full h-full object-cover"
+        style={{ display: participant.isVideoEnabled ? "block" : "none" }}
+      />
+      {!participant.isVideoEnabled && (
+        <div className="w-full h-full flex items-center justify-center">
+          <User size={48} className="text-gray-400" />
+        </div>
+      )}
+      <div className="absolute bottom-2 left-2 bg-black/60 px-2 py-1 rounded text-white text-xs flex items-center gap-2">
+        <span>{participant.displayName}</span>
+        {!participant.isAudioEnabled && <MicOff size={12} />}
+        {!participant.isVideoEnabled && <VideoOff size={12} />}
+      </div>
+    </div>
+  );
 }
 
 export default function VideoCall() {
@@ -27,8 +79,25 @@ export default function VideoCall() {
   const navigate = useNavigate();
   const initialized = useRef(false);
 
-  const roomId = searchParams.get("room");
+  const roomId = searchParams.get("room") || "";
   const currentUser = AuthService.getCurrentUser();
+
+  const {
+    participants,
+    localVideoRef,
+    isAudioEnabled,
+    isVideoEnabled,
+    isConnected: isVoiceConnected,
+    error: voiceError,
+    joinRoom: joinVoiceRoom,
+    leaveRoom: leaveVoiceRoom,
+    toggleAudio,
+    toggleVideo,
+  } = useVideoCall(
+    roomId,
+    currentUser?.id || "",
+    currentUser?.name || "Usuario"
+  );
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -64,7 +133,7 @@ export default function VideoCall() {
       setMaxParticipants(result.maxParticipants || 10);
       setLoadingMeeting(false);
 
-      // 2) Conectar WebSocket con Backend 2
+      // 2) Conectar WebSocket con Backend 2 (Chat)
       WebSocketService.connect(currentUser.id);
 
       WebSocketService.onMessage((data) => {
@@ -127,6 +196,8 @@ export default function VideoCall() {
       };
 
       checkAndJoin();
+
+      joinVoiceRoom();
     };
 
     init();
@@ -135,6 +206,7 @@ export default function VideoCall() {
       console.log("🧹 Cleanup VideoCall: leaving room & disconnecting WS");
       WebSocketService.leaveRoom();
       WebSocketService.disconnect();
+      leaveVoiceRoom();
       initialized.current = false;
     };
   }, []);
@@ -142,6 +214,12 @@ export default function VideoCall() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    if (participants.size > 0) {
+      setParticipantCount(participants.size + 1); // +1 for local user
+    }
+  }, [participants]);
 
   const handleJoinError = (payload: any) => {
     let errorMessage = "Error al unirse a la reunión";
@@ -183,6 +261,7 @@ export default function VideoCall() {
   const handleEndCall = () => {
     WebSocketService.leaveRoom();
     WebSocketService.disconnect();
+    leaveVoiceRoom();
     initialized.current = false;
     navigate("/start-meeting");
   };
@@ -199,62 +278,137 @@ export default function VideoCall() {
     );
   }
 
-  if (meetingError) {
+  if (meetingError || voiceError) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <Header title="Llamada en vivo" showMenu={true} />
         <main className="flex-1 flex items-center justify-center">
-          <p className="text-red-600">{meetingError}</p>
+          <p className="text-red-600">{meetingError || voiceError}</p>
         </main>
         <Footer />
       </div>
     );
   }
 
+  const participantsArray = Array.from(participants.values());
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header title="Llamada en vivo" showMenu={true} />
 
       <main className="flex-1 flex flex-col lg:flex-row items-start justify-center gap-10 px-6 py-10">
-        {/* Área de video */}
         <div
-          className="w-full max-w-3xl bg-white rounded-2xl shadow-md border border-gray-200 p-6 flex flex-col items-center justify-between"
-          style={{ height: "390px" }}
+          className="w-full max-w-3xl bg-white rounded-2xl shadow-md border border-gray-200 p-6 flex flex-col"
+          style={{ minHeight: "390px" }}
         >
-          <div className="w-full flex justify-between items-center mb-2">
+          <div className="w-full flex justify-between items-center mb-4">
             <span className="text-sm text-gray-600">
               Room: <strong>{roomId}</strong>
             </span>
             <div className="flex items-center gap-4">
               <span className="text-sm text-gray-600">
-                Participantes: <strong>{participantCount}/{maxParticipants}</strong>
+                Participantes:{" "}
+                <strong>
+                  {participantCount}/{maxParticipants}
+                </strong>
               </span>
               <span
                 className={`text-sm font-semibold ${
-                  connected ? "text-green-600" : "text-red-600"
+                  connected && isVoiceConnected
+                    ? "text-green-600"
+                    : "text-red-600"
                 }`}
               >
-                {connected ? "🟢 Conectado" : "🔴 Desconectado"}
+                {connected && isVoiceConnected
+                  ? "🟢 Conectado"
+                  : "🔴 Conectando..."}
               </span>
             </div>
           </div>
 
-          <div className="flex-1 flex items-center justify-center">
-            <User size={120} className="text-gray-400" />
+          <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            {/* Local video */}
+            <div className="relative bg-gray-800 rounded-lg overflow-hidden aspect-video">
+              <video
+                ref={localVideoRef}
+                autoPlay
+                muted
+                playsInline
+                className="w-full h-full object-cover mirror"
+                style={{
+                  transform: "scaleX(-1)",
+                  display: isVideoEnabled ? "block" : "none",
+                }}
+              />
+              {!isVideoEnabled && (
+                <div className="w-full h-full flex items-center justify-center">
+                  <User size={48} className="text-gray-400" />
+                </div>
+              )}
+              <div className="absolute bottom-2 left-2 bg-black/60 px-2 py-1 rounded text-white text-xs flex items-center gap-2">
+                <span>Tú ({currentUser?.name})</span>
+                {!isAudioEnabled && <MicOff size={12} />}
+                {!isVideoEnabled && <VideoOff size={12} />}
+              </div>
+            </div>
+
+            {/* Remote participants */}
+            {participantsArray.map((participant) => (
+              <ParticipantVideo
+                key={participant.socketId}
+                participant={participant}
+              />
+            ))}
+
+            {/* Empty placeholder if no remote participants */}
+            {participantsArray.length === 0 && (
+              <div className="bg-gray-100 rounded-lg flex items-center justify-center aspect-video">
+                <p className="text-gray-400 text-sm">
+                  Esperando participantes...
+                </p>
+              </div>
+            )}
           </div>
 
-          <div className="flex items-center gap-8 pb-2">
-            <button className="p-3 bg-gray-200 rounded-full hover:bg-gray-300 transition">
-              <MicOff size={28} className="text-black" />
+          <div className="flex items-center justify-center gap-8 pb-2">
+            <button
+              onClick={toggleAudio}
+              className={`p-3 rounded-full transition ${
+                isAudioEnabled
+                  ? "bg-gray-200 hover:bg-gray-300"
+                  : "bg-red-100 hover:bg-red-200"
+              }`}
+              title={
+                isAudioEnabled ? "Silenciar micrófono" : "Activar micrófono"
+              }
+            >
+              {isAudioEnabled ? (
+                <Mic size={28} className="text-black" />
+              ) : (
+                <MicOff size={28} className="text-red-600" />
+              )}
             </button>
 
-            <button className="p-3 bg-gray-200 rounded-full hover:bg-gray-300 transition">
-              <VideoOff size={28} className="text-black" />
+            <button
+              onClick={toggleVideo}
+              className={`p-3 rounded-full transition ${
+                isVideoEnabled
+                  ? "bg-gray-200 hover:bg-gray-300"
+                  : "bg-red-100 hover:bg-red-200"
+              }`}
+              title={isVideoEnabled ? "Desactivar cámara" : "Activar cámara"}
+            >
+              {isVideoEnabled ? (
+                <Video size={28} className="text-black" />
+              ) : (
+                <VideoOff size={28} className="text-red-600" />
+              )}
             </button>
 
             <button
               onClick={handleEndCall}
               className="p-3 bg-red-500 rounded-full hover:bg-red-600 transition"
+              title="Finalizar llamada"
             >
               <PhoneOff size={28} className="text-white" />
             </button>
